@@ -54,7 +54,7 @@ class Wraith::FolderManager
     logger.info "COPYING BASE IMAGES"
     spider_paths.each do |path|
       path = path[0]
-      logger.info "Copying #{history_dir}/#{path} to #{dir}"
+      logger.debug "Copying #{history_dir}/#{path} to #{dir}"
       FileUtils.cp_r(Dir.glob("#{history_dir}/#{path}"), dir)
     end
   end

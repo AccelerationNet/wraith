@@ -18,9 +18,9 @@ class Wraith::CompareImages
     Parallel.each(files.each_slice(2), :in_processes => Parallel.processor_count) do |base, compare|
       diff = base.gsub(/([a-zA-Z0-9]+).png$/, "diff.png")
       info = base.gsub(/([a-zA-Z0-9]+).png$/, "data.txt")
-      logger.info "Comparing #{base} and #{compare}"
+      logger.debug "Comparing #{base} and #{compare}"
       compare_task(base, compare, diff, info)
-      logger.info "Saved diff"
+      logger.debug "Saved diff"
     end
   end
 
