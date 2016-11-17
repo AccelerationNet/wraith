@@ -66,6 +66,10 @@ describe "wraith config" do
     it "include compare label" do
       expect(wraith.paths).to eq("home" => "/", "uk_index" => "/uk")
     end
+
+    it "include num threads" do
+      expect(wraith.num_threads).to eq(8)
+    end
   end
 
   describe "different ways of initialising browser engine" do
