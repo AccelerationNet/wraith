@@ -170,4 +170,8 @@ class Wraith::Wraith
     # @TODO - also add a `--verbose` CLI flag which overrides whatever you have set in the config
     @config["verbose"] || false
   end
+
+  def num_threads
+    (@config["num_threads"] || 8).to_i
+  end
 end
