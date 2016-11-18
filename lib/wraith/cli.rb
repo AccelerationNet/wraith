@@ -54,6 +54,7 @@ class Wraith::CLI < Thor
     within_acceptable_limits do
       directory("templates/configs", "configs")
       directory("templates/javascript", "javascript")
+      directory("templates/local", "local")
     end
   end
 

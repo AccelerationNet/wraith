@@ -1,0 +1,51 @@
+#!/bin/bash
+### Watch for running phantomjs processes, and kill any that are too old (hung)
+
+IntervalTime=60         # How long to wait between process list snapshots
+PREFIX="    (BG HAWK)"  # Make output non instrusive to the foreground output
+sleep 5                 # Give everything time to start up
+
+
+### Make sure the spider file exists....
+while [ ! -f spider.txt ]
+do
+    echo "${PREFIX} Waiting for spider.txt file to be created...."
+    sleep 10
+done
+
+### Initial process snapshot
+PrevPIDList=`ps -e | grep phantomjs | grep -v $$ | cut -c1-6`
+
+while true
+do
+    echo "${PREFIX} Sleeping for ${IntervalTime} seconds...."
+    sleep ${IntervalTime}
+    ### Capture a fresh process list (exclude ourself)
+    PIDList=`ps -e | grep phantomjs | grep -v $$ | cut -c1-6`
+
+    KillCount=0
+    RunCount=0
+    for PID in ${PIDList};
+    do
+        if [ `echo ${PrevPIDList} | grep ${PID} | wc -l` -gt 0 ]
+        then
+            KillCount=`expr ${KillCount} + 1`
+            kill ${PID}
+        else
+            ### If its still running, then count that so we know when we can exit
+            [ "`ps -e | grep ${PID}`" != "" ] && RunCount=`expr ${RunCount} + 1`
+        fi
+    done
+    PrevPIDList=${PIDList}
+
+    ### Print a summary line of counts so you can keep an eye on it
+    echo "${PREFIX} Killed ${KillCount} stale phantomjs processes, ${RunCount} still running."
+ 
+    ### If nothing was killed and nothing is still running, then we can exit
+    if [ `expr ${RunCount} + ${KillCount}` -eq 0 ] 
+    then
+        echo "${PREFIX} All phantomjs proccesses have exited.  Terminating monitor."
+        break
+    fi
+done
+

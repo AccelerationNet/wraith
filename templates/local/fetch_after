@@ -1,0 +1,50 @@
+#!/bin/bash
+
+CONFIG_FILE="local/wordpress.yaml"
+URL_FILE="url.txt"
+
+### Clean up any resources if the script gets killed
+function cleanup {
+    ### Make sure to kill and running phantomjs_hawk processes
+    if [ "$HAWKPID" != "" -a $HAWKPID -gt 0 ] 
+    then
+        echo "Killing the background hawk program $HAWKPID"
+        kill $HAWKPID
+    fi
+}
+HAWKPID=0
+trap cleanup EXIT
+
+### Run the hawk program in the background
+SCRIPTPATH=`dirname $0`
+bash $SCRIPTPATH/phantomjs_hawk &
+HAWKPID=$!
+
+### Run with the same URL as the before script
+url=`cat $URL_FILE 2>/dev/null`
+echo "Comparing $url...."
+
+### Configure for diffs_first style gallery first
+sed -e "s/^mode:.*$/mode: diffs_first/g" $CONFIG_FILE >tmp.$$
+cp tmp.$$ $CONFIG_FILE
+rm -rf tmp.$$
+
+### Capture latest site images
+wraith latest $CONFIG_FILE
+mv new_shots/gallery.html new_shots/gallery_all.html
+
+### Configure for diffs_only style gallery next
+sed -e "s/^mode:.*$/mode: diffs_only/g" $CONFIG_FILE >tmp.$$
+cp tmp.$$ $CONFIG_FILE
+rm -rf tmp.$$
+
+### Capture latest site images
+wraith generate_gallery $CONFIG_FILE
+mv new_shots/gallery.html new_shots/gallery_diffs.html
+
+### Bring up both galleries up in forefox
+echo " "
+echo "All collected images are in: new_shots/gallery_all.html"
+echo "Only changed images are in:  new_shots/gallery_diffs.html"
+firefox new_shots/gallery_all.html
+firefox new_shots/gallery_diffs.html

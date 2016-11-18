@@ -1,0 +1,61 @@
+##############################################################
+# This particular config is intended to be used in the
+# process of migrating wordpress sites from one server 
+# to another.
+#
+# `bash local/fetch_before` to capture the old site
+# `bash local/fetch_after` after the site has been migrated
+#
+##############################################################
+##############################################################
+
+#verbose: true
+num_threads: 16		# only on ACC forked code
+
+
+# (required) The engine to run Wraith with. Examples: 'phantomjs', 'casperjs', 'slimerjs'
+browser: "phantomjs"
+#browser: "slimerjs"
+
+# (required) The directory that your screenshots will be stored in
+directory: "new_shots"
+history_dir: "old_shots"
+
+# (required) The domain(s) to take screenshots of.
+domains:
+  wordpress: "http://www.mytestsite.com"
+
+# comment these out to spider the whole site (what you normally want)
+#paths:
+#  home: /
+#  __contact: /contact/
+#  __about: /about/
+
+# (required) Screen widths (and optional height) to resize the browser to before taking the screenshot.
+screen_widths:
+#  - 600x768
+#  - 1280
+  - 1800
+
+# (optional) JavaScript file to execute before taking screenshot of every path. Default: nil
+before_capture: 'javascript/disable_javascript--phantom.js'
+
+# (required) Amount of fuzz ImageMagick will use when comparing images. A higher fuzz makes the comparison less strict.
+fuzz: '2%'   #20%
+
+# (optional) The maximum acceptable level of difference (in %) between two images before Wraith reports a failure. Default: 0
+threshold: 5
+
+# (optional) Specify the template (and generated thumbnail sizes) for the gallery output.
+gallery:
+  template: 'slideshow_template' # Examples: 'basic_template' (default), 'slideshow_template'
+  thumb_width:  200
+  thumb_height: 200
+
+# (optional) Choose which results are displayed in the gallery, and in what order. Default: alphanumeric
+# Options:
+#   alphanumeric - all paths (with or without a difference) are shown, sorted by path
+#   diffs_first - all paths (with or without a difference) are shown, sorted by difference size (largest first)
+#   diffs_only - only paths with a difference are shown, sorted by difference size (largest first)
+# Note: different screen widths are always grouped together.
+mode: diffs_only
