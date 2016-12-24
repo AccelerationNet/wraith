@@ -96,19 +96,23 @@ class Wraith::SaveImages
   end
 
   def attempt_image_capture(capture_page_image, filename)
-    max_attempts = 5
+    max_attempts = 10
     max_attempts.times do |i|
-      run_command capture_page_image
       return true if image_was_created filename
+      run_command capture_page_image
       logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts}"
     end
-
+    return true if image_was_created filename
     fail "Unable to capture image #{filename} after #{max_attempts} attempt(s)" unless image_was_created filename
   end
 
   def image_was_created(filename)
-     # @TODO - need to check if the image was generated even if in resize mode
-    wraith.resize or File.exist? filename
+    # @TODO - need to check if the image was generated even if in resize mode
+    if File.exist? filename
+      logger.info "Image saved #{filename}"
+      return true
+    end
+    return false
   end
 
   def create_invalid_image(filename, width)
