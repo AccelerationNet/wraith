@@ -173,8 +173,15 @@ class Wraith::CLI < Thor
   desc "compare_latest_iamges [config_name]", "get the latest images"
   def compare_latest_images (config)
     logger.info Wraith::Validate.new(config).validate("latest")
-      compare_images(config)
+    compare_images(config)
   end
+
+  desc "compare_latest_iamges [config_name]", "get the latest images"
+  def latest_thumbnails (config)
+    logger.info Wraith::Validate.new(config).validate("latest")
+    generate_thumbnails(config)
+  end
+
 
   desc "latest [config_name]", "Capture new shots to compare with baseline"
   def latest(config, reset)

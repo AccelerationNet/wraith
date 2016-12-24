@@ -1,9 +1,11 @@
 require "wraith"
+require "wraith/helpers/logger"
 require "parallel"
 require "fileutils"
 require "shellwords"
 
 class Wraith::Thumbnails
+  include Logging
   attr_reader :wraith
 
   def initialize(config)
@@ -20,10 +22,14 @@ class Wraith::Thumbnails
   end
 
   def thumbnail_image(png_path, output_path)
+    if File.exists? output_path
+      return true
+    end
     unless File.directory?(File.dirname(output_path))
       FileUtils.mkdir_p(File.dirname(output_path))
     end
 
     `convert #{png_path.shellescape} -thumbnail 200 -crop #{wraith.thumb_width.to_s}x#{wraith.thumb_height.to_s}+0+0 #{output_path.shellescape}`
+    logger.info "Created thumbnail #{output_path}"
   end
 end
