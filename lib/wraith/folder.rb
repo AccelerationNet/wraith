@@ -41,8 +41,8 @@ class Wraith::FolderManager
       logger.error "no `history_dir` attribute found in config. Cannot copy files."
     else
       FileUtils.cp_r("#{dir}/.", "#{history_dir}/")
-      FileUtils.rm_rf("#{history_dir}/thumbnails") # thumbnails aren't generated until the gallery stage anyway
-      FileUtils.rm_rf("#{dir}") # get rid of the live folder
+      # FileUtils.rm_rf("#{history_dir}/thumbnails") # thumbnails aren't generated until the gallery stage anyway
+      # FileUtils.rm_rf("#{dir}") # get rid of the live folder
       Dir["#{history_dir}/**/*.png"].each do |filepath|
         new_name = filepath.gsub("latest.png", "base.png")
         File.rename(filepath, new_name)
@@ -75,7 +75,7 @@ class Wraith::FolderManager
   def tidy_shots_folder(dirs)
     if wraith.mode == "diffs_only"
       dirs.each do |folder_name, shot_info|
-        if shot_info.none? { |_k, v| v[:data] > 0 }
+        if shot_info.none? { |_k, v| v && v[:data] && v[:data] > 0 }
           FileUtils.rm_rf("#{wraith.directory}/#{folder_name}")
           dirs.delete(folder_name)
         end

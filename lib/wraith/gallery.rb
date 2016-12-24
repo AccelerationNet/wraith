@@ -40,7 +40,8 @@ class Wraith::GalleryGenerator
         matcher(match, filename, dirname, category) unless match.nil?
       end
     end
-    @folder_manager.tidy_shots_folder(@dirs)
+    # lets not delete stuff just yet
+    # @folder_manager.tidy_shots_folder(@dirs)
     @failed_shots = @folder_manager.threshold_rate(@dirs)
     sorting_dirs(@dirs)
   end
