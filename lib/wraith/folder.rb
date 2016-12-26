@@ -36,6 +36,15 @@ class Wraith::FolderManager
     FileUtils.mkdir_p("#{dir}")
   end
 
+  def remove_labeled_shots(label)
+    Dir["#{dir}/**/*.png"].each do |filepath|
+      if filepath.end_with?( label + ".png" )
+          logger.debug "Removing labeled file #{filepath}"
+          File.delete(filepath)
+      end
+    end
+  end
+
   def copy_old_shots
     if history_dir.nil?
       logger.error "no `history_dir` attribute found in config. Cannot copy files."
