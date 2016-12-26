@@ -36,7 +36,8 @@ class Wraith::Validate
       validate_history_mode
     when "latest"
       validate_history_mode
-      validate_base_shots_exist
+      # We used to have two directories, now we have files side by side in one
+      # validate_base_shots_exist
     else
       logger.warn "Wraith doesn't know how to validate mode '#{mode}'. Continuing..."
     end
@@ -50,8 +51,8 @@ class Wraith::Validate
   end
 
   def validate_history_mode
-    fail MissingRequiredPropertyError, "You must specify a `history_dir` to run"\
-                  " Wraith in history mode. #{docs_prompt}" unless wraith.history_dir
+    # we used to require a history folder so that we could copy images around
+    #fail MissingRequiredPropertyError, "You must specify a `history_dir` to run"\          #        " Wraith in history mode. #{docs_prompt}" unless wraith.history_dir
 
     fail InvalidDomainsError, "History mode requires exactly one domain. #{docs_prompt}" if wraith.domains.length != 1
   end
