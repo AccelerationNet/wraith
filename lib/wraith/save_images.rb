@@ -1,4 +1,5 @@
 require "parallel"
+require 'timeout'
 require "shellwords"
 require "wraith"
 require "wraith/helpers/capture_options"
@@ -6,14 +7,51 @@ require "wraith/helpers/logger"
 require "wraith/helpers/save_metadata"
 require "wraith/helpers/utilities"
 
+#http://stackoverflow.com/questions/8292031/ruby-timeouts-and-system-commands
+def exec_with_timeout(cmd, timeout, logoutput=true)
+  begin
+    # stdout, stderr pipes
+    rout, wout = IO.pipe
+    rerr, werr = IO.pipe
+    stdout, stderr = nil
+
+    pid = Process.spawn(cmd, pgroup: true, :out => wout, :err => werr)
+
+    Timeout.timeout(timeout) do
+      Process.waitpid(pid)
+
+      # close write ends so we can read from them
+      wout.close
+      werr.close
+
+      stdout = rout.readlines.join
+      stderr = rerr.readlines.join
+    end
+
+  rescue Timeout::Error
+    logger.error "Killed child phantom js: #{cmd}"
+    Process.kill(-9, pid)
+    Process.detach(pid)
+  ensure
+    wout.close unless wout.closed?
+    werr.close unless werr.closed?
+    # dispose the read ends of the pipes
+    rout.close
+    rerr.close
+  end
+  logger.info "#{stdout}" if logoutput
+  stdout
+end
+
 class Wraith::SaveImages
   include Logging
   attr_reader :wraith, :history, :meta
 
-  def initialize(config, history = false, yaml_passed = false)
+  def initialize(config, history = false, yaml_passed = false, label=nil)
     @wraith = Wraith::Wraith.new(config, yaml_passed)
     @history = history
-    @meta = SaveMetadata.new(@wraith, history)
+    @meta = SaveMetadata.new(@wraith, history, label=label)
+    logger.info "Save meta with label #{label}"
   end
 
   def check_paths
@@ -49,11 +87,9 @@ class Wraith::SaveImages
   def define_individual_job(label, settings, width)
     base_file_name    = meta.file_names(width, label, meta.base_label)
     compare_file_name = meta.file_names(width, label, meta.compare_label)
-
     jobs = []
     jobs << [label, settings.path, prepare_widths_for_cli(width), settings.base_url,    base_file_name,    settings.selector, wraith.before_capture, settings.before_capture]
     jobs << [label, settings.path, prepare_widths_for_cli(width), settings.compare_url, compare_file_name, settings.selector, wraith.before_capture, settings.before_capture] unless settings.compare_url.nil?
-
     jobs
   end
 
@@ -64,12 +100,7 @@ class Wraith::SaveImages
   end
 
   def run_command(command)
-    output = []
-    IO.popen(command).each do |line|
-      logger.info line
-      output << line.chomp!
-    end.close
-    output
+    exec_with_timeout(command, 60)
   end
 
   def parallel_task(jobs)
@@ -97,19 +128,19 @@ class Wraith::SaveImages
 
   def attempt_image_capture(capture_page_image, filename)
     max_attempts = 10
+    return true if image_was_created filename
     max_attempts.times do |i|
-      return true if image_was_created filename
       run_command capture_page_image
+      return true if image_was_created filename
       logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts}"
     end
-    return true if image_was_created filename
     fail "Unable to capture image #{filename} after #{max_attempts} attempt(s)" unless image_was_created filename
   end
 
   def image_was_created(filename)
     # @TODO - need to check if the image was generated even if in resize mode
     if File.exist? filename
-      logger.info "Image saved #{filename}"
+      logger.info "--> Image saved #{filename}"
       return true
     end
     return false

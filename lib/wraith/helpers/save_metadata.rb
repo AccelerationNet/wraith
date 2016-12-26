@@ -3,14 +3,14 @@ require "wraith"
 class SaveMetadata
   attr_reader :wraith, :history
 
-  def initialize(config, history, file_label)
+  def initialize(config, history, file_tag)
     @wraith = config
     @history = history
-    @file_label = file_label
+    @file_tag = file_tag
   end
 
   def meta_label
-    return @file_label if @file_label
+    return @file_tag if @file_tag
     return "_latest" if @history
     return ""
   end
