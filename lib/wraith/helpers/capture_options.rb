@@ -10,7 +10,11 @@ class CaptureOptions
   end
 
   def path
-    casper?(options)
+    p = casper?(options)
+    if p=="path"
+      return ""
+    end
+    return p
   end
 
   def selector
@@ -47,6 +51,6 @@ class CaptureOptions
   end
 
   def casper?(options)
-    options["path"] ? options["path"] : options
+    (options.is_a?(Hash) && options["path"]) ? options["path"] : options
   end
 end

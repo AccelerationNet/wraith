@@ -15,6 +15,7 @@ def exec_with_timeout(cmd, timeout, logoutput=true)
     rerr, werr = IO.pipe
     stdout, stderr = nil
 
+
     pid = Process.spawn(cmd, pgroup: true, :out => wout, :err => werr)
 
     Timeout.timeout(timeout) do
@@ -110,7 +111,7 @@ class Wraith::SaveImages
         attempt_image_capture(command, filename)
       rescue => e
         logger.error e
-        create_invalid_image(filename, width)
+        # create_invalid_image(filename, width)
       end
     end
   end
@@ -122,7 +123,6 @@ class Wraith::SaveImages
     path_before_capture   = convert_to_absolute path_before_capture
 
     command_to_run = "#{meta.engine} #{wraith.phantomjs_options} '#{wraith.snap_file}' '#{url}' '#{width}' '#{file_name}' '#{selector}' '#{global_before_capture}' '#{path_before_capture}'"
-    logger.debug command_to_run
     command_to_run
   end
 
@@ -132,7 +132,7 @@ class Wraith::SaveImages
     max_attempts.times do |i|
       run_command capture_page_image
       return true if image_was_created filename
-      logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts}"
+      logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts} \n  ----  #{capture_page_image}\n"
     end
     fail "Unable to capture image #{filename} after #{max_attempts} attempt(s)" unless image_was_created filename
   end
@@ -149,8 +149,8 @@ class Wraith::SaveImages
   def create_invalid_image(filename, width)
     logger.warn "Using fallback image instead"
     invalid = File.expand_path("../../assets/invalid.jpg", File.dirname(__FILE__))
+    FileUtils.mkdir_p(File.dirname(filename))
     FileUtils.cp invalid, filename
-
     set_image_width(filename, width)
   end
 
