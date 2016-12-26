@@ -27,6 +27,12 @@ class Wraith::GalleryGenerator
       end
       pnf = Pathname.new(info[:from])
       match = MATCH_FILENAME.match(pnf.basename.to_s)
+      info[:from] = info[:from].gsub("#{wraith.directory}/", "")
+      info[:fromTH] = "thumbnails/#{info[:from]}"
+      info[:to] = info[:to].gsub("#{wraith.directory}/", "")
+      info[:toTH] = "thumbnails/#{info[:to]}"
+      info[:diff] = info[:diff].gsub("#{wraith.directory}/", "")
+      info[:diffTH] = "thumbnails/#{info[:diff]}"
       info[:size] = match[1].to_i
       info[:dir] = pnf.dirname.to_s
       @dirs << info
@@ -190,7 +196,6 @@ class Wraith::GalleryGenerator
 
     template = File.expand_path("gallery_template/#{wraith.gallery_template}.erb", File.dirname(__FILE__))
     generate_html(@location, directories, template, dest, with_path)
-
     report_gallery_status dest
   end
 

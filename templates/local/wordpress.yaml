@@ -18,12 +18,12 @@ browser: "phantomjs"
 #browser: "slimerjs"
 
 # (required) The directory that your screenshots will be stored in
-directory: "new_shots"
+directory: "furniturekingdom.com"
 history_dir: "old_shots"
 
 # (required) The domain(s) to take screenshots of.
 domains:
-  wordpress: "http://www.mytestsite.com"
+  wordpress: "http://www.furniturekingdom.com"
 
 # comment these out to spider the whole site (what you normally want)
 #paths:
@@ -48,7 +48,7 @@ threshold: 5
 
 # (optional) Specify the template (and generated thumbnail sizes) for the gallery output.
 gallery:
-  template: 'slideshow_template' # Examples: 'basic_template' (default), 'slideshow_template'
+  template: 'slideshow_new_template' # Examples: 'basic_template' (default), 'slideshow_template'
   thumb_width:  200
   thumb_height: 200
 
@@ -58,4 +58,4 @@ gallery:
 #   diffs_first - all paths (with or without a difference) are shown, sorted by difference size (largest first)
 #   diffs_only - only paths with a difference are shown, sorted by difference size (largest first)
 # Note: different screen widths are always grouped together.
-mode: diffs_only
+mode: diffs_first

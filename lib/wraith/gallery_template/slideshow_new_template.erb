@@ -161,8 +161,8 @@
           </div>
           <div class="panel-heading">Pages:</div>
           <ul class="list-group list-group-flush">
-            <% directories.keys.each do |dir| %>
-            <li class="list-group-item"><a href="#<%=path%><%=dir%>"><span>/<%=dir.gsub('__', '/')%></span></a></li>
+            <% directories.each do |info| %>
+            <li class="list-group-item"><a href="#<%=path%><%=dir%>"><span>/<%=info[:dir].gsub('__', '/')%></span></a></li>
             <% end %>
           </ul>
         </div>
@@ -175,34 +175,25 @@
             <div class="row slide <%= dir %>">
               <a class="path" name="<%= dir %>"></a>
               <div class="col-sm-12 text-center">
-                <% if threshold.nil? %>
-                  <h4><%= info[:size] %>px - /<%= info[:dir].gsub('__', '/') %></h4>
-                <% else %>
-                  <% if files[:data] > threshold %>
-                    <h4><%= info[:size] %>px - /<%= info[:dir].gsub('__', '/') %></h4>
-                  <% else %>
-                    <h4><%= info[:size] %>px - /<%= info[:dir].gsub('__', '/') %></h4>
-                  <% end %>
-                <% end %>
+                <h4><%= info[:size] %>px - /<%= info[:dir].gsub('__', '/') %></h4>
               </div>
-
               <div class="col-sm-4">
                 <a class="shot" href="<%=info[:from]%>">
-                  <img class="short-screenshot img-thumbnail" src="<%=path%>/thumbnails/<%=info[:from]%>">
+                  <img class="short-screenshot img-thumbnail" src="<%=path%><%=info[:fromTH]%>">
                 </a>
                 <p class="text-center">before</p>
               </div>
               <div class="col-sm-4">
                 <a class="shot" href="<%=info[:to]%>">
                   <img class="short-screenshot img-thumbnail"
-                       src="<%=path%>/thumbnails/<%=info[:to]%>">
+                       src="<%=path%><%=info[:toTH]%>">
                 </a>
                 <p class="text-center">after</p>
               </div>
               <div class="col-sm-4">
                 <a class="shot" href="<%=info[:diff]%>">
                   <img class="short-screenshot img-thumbnail"
-                       src="<%=path%>/thumbnails/<%=info[:diff]%>">
+                       src="<%=path%><%=info[:diffTH]%>">
                 </a>
                 <p class="text-center">diff</p>
               </div>
