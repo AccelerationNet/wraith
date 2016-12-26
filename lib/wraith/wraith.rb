@@ -100,7 +100,10 @@ class Wraith::Wraith
   end
 
   def spider_days
-    @config["spider_days"]
+    s = @config["spider_days"]
+    s = s[0] if s.kind_of?(Array)
+    s = 180 if not s
+    return s
   end
 
   def sitemap

@@ -1,54 +1,6 @@
 #!/bin/bash
-
-CONFIG_FILE="local/wordpress.yaml"
-URL_FILE="url.txt"
-
-rm -f spider.txt -Rf old_shots -Rf new_shots
-
-### Clean up any resources if the script gets killed
-function cleanup {
-    ### Make sure to kill and running phantomjs_hawk processes
-    if [ "$HAWKPID" != "" -a $HAWKPID -gt 0 ] 
-    then
-        echo "Killing the background hawk program $HAWKPID"
-        kill $HAWKPID
-    fi
-}
-HAWKPID=0
-trap cleanup EXIT
-
-### Get the domain URL from the user or the last one used
-url=`cat $URL_FILE 2>/dev/null`
-while true; do
-    ### Ask the user what url to test (re-use the last one as default)
-    read -p "Enter the url of the site to scan (enter for $url) : " newurl
-    
-    if [ "$newurl" != "" ]
-    then
-        url=$newurl
-    fi
-
-    ### Test that its a valid url we can hit
-    if [ `ping -c 1 $url | wc -l` -gt 0 ] 
-    then
-        echo "  URL $url is validated."
-        break
-    fi
-done
-echo $url >$URL_FILE
-echo "Spidering $url...."
-
-### Run the hawk program in the background
-SCRIPTPATH=`dirname $0`
-bash $SCRIPTPATH/phantomjs_hawk &
-HAWKPID=$!
-
-### Set the configuration file for the new domain URL
-sed -e "s/^.*wordpress:.*$/  wordpress: \"http:\/\/"${url}"\"/g" $CONFIG_FILE >tmp.$$
-cp tmp.$$ $CONFIG_FILE
-rm -rf tmp.$$
-
+CONFIG_FILE=${1:-"local/wordpress.yaml"}
 ### Start a new history session
-wraith history $CONFIG_FILE
+wraith save_latest_images -l '_old' $CONFIG_FILE
 
 echo "Now migrate the site and then run the script 'bash local/fetch_after' for the comparisons."
