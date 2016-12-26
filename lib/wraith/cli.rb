@@ -16,6 +16,10 @@ class Wraith::CLI < Thor
   include Thor::Actions
   include Logging
 
+  # This is the magical bit that gets mixed into your classes
+  class_option :verbose, :type => :boolean
+  class_option :debug, :type => :boolean
+
   attr_accessor :config_name
 
   def self.source_root
@@ -59,10 +63,17 @@ class Wraith::CLI < Thor
   end
 
   desc "reset_shots [config_name]", "removes all the files in the shots folder"
-  def reset_shots(config_name)
+  method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
+  def reset_shots(config_name, label=nil)
+    label = options[:label] or label
+    logger.info "Removing old shots #{label}"
     within_acceptable_limits do
       reset = Wraith::FolderManager.new(config_name)
-      reset.clear_shots_folder
+      if label
+        reset.remove_labeled_shots label
+      else
+        reset.clear_shots_folder
+      end
     end
   end
 
@@ -82,11 +93,11 @@ class Wraith::CLI < Thor
     end
   end
 
-  desc "save_images [config_name]", "captures screenshots"
-  def save_images(config_name, history = false)
+  desc "save_images [config_name] [histore=false] [label=nil]", "captures screenshots"
+  def save_images(config_name, history = false, label=nil)
     within_acceptable_limits do
-      logger.info "SAVING IMAGES"
-      save_images = Wraith::SaveImages.new(config_name, history)
+      logger.info "SAVING IMAGES with history:#{history} label:#{label}"
+      save_images = Wraith::SaveImages.new(config_name, history, false, label)
       save_images.save_images
     end
   end
@@ -128,10 +139,11 @@ class Wraith::CLI < Thor
   end
 
   desc "capture [config_name]", "Capture paths against two domains, compare them, generate gallery"
-  def capture(config, multi = false, reset = false)
+  method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
+  def capture(config, multi = false)
     within_acceptable_limits do
       logger.info Wraith::Validate.new(config).validate("capture")
-      reset_shots(config) if reset
+      reset_shots(config) if options[:reset]
       check_for_paths(config)
       setup_folders(config)
       save_images(config)
@@ -153,10 +165,11 @@ class Wraith::CLI < Thor
   end
 
   desc "history [config_name]", "Setup a baseline set of shots"
-  def history(config, reset =false)
+  method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
+  def history(config)
     within_acceptable_limits do
       logger.info Wraith::Validate.new(config).validate("history")
-      reset_shots(config) if reset
+      reset_shots(config) if options[:reset]
       check_for_paths(config)
       setup_folders(config)
       save_images(config)
@@ -164,10 +177,15 @@ class Wraith::CLI < Thor
     end
   end
 
-  desc "save_latest_iamges [config_name]", "get the latest images"
-  def save_latest_images (config)
+  desc "save_latest_images [config_name]", "get the latest images"
+  method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
+  method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
+  def save_latest_images (config, label=nil)
     logger.info Wraith::Validate.new(config).validate("latest")
-      save_images(config, true)
+    if options[:reset]
+      reset_shots config, label || options[:label]
+    end
+    save_images(config, true, label || options[:label])
   end
 
   desc "compare_latest_iamges [config_name]", "get the latest images"
@@ -182,12 +200,18 @@ class Wraith::CLI < Thor
     generate_thumbnails(config)
   end
 
+  desc "latest_gallery [config_name]", "make a new gallery"
+  def latest_gallery (config)
+    logger.info Wraith::Validate.new(config).validate("latest")
+    generate_gallery(config)
+  end
 
   desc "latest [config_name]", "Capture new shots to compare with baseline"
-  def latest(config, reset)
+  method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
+  def latest(config)
     within_acceptable_limits do
       logger.info Wraith::Validate.new(config).validate("latest")
-      reset_shots(config) if reset
+      reset_shots(config) if options[:reset]
       save_images(config, true)
       copy_base_images(config)
       crop_images(config)
@@ -197,9 +221,22 @@ class Wraith::CLI < Thor
     end
   end
 
+  desc "test_logging [config_name]", "tests the logging"
+  method_option :level, :default=>Logger::WARN, :desc=> "the level the logger writes at"
+  def test_logging (config=nil)
+    puts "--- In test logger ---"
+    logger.info "Testing the logger at: #{logger.level}"
+    logger.debug "Debug: Testing the logger at: #{logger.level}"
+  end
+
   desc "version", "Show the version of Wraith"
   map ["--version", "-version", "-v"] => "version"
   def version
     logger.info Wraith::VERSION
+  end
+
+  def initialize(*args)
+    super
+    logger.debug "options:#{options} "
   end
 end
