@@ -96,7 +96,7 @@ class Wraith::Wraith
   end
 
   def spider_file
-    @config["spider_file"] ? @config["spider_file"] : "spider.txt"
+    @config["spider_file"] ? @config["spider_file"] : "#{directory}/spider.txt"
   end
 
   def spider_days

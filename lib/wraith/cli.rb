@@ -187,6 +187,8 @@ class Wraith::CLI < Thor
     if options[:reset]
       reset_shots config, label || options[:label]
     end
+    check_for_paths(config)
+    setup_folders(config)
     save_images(config, true, label || options[:label])
   end
 

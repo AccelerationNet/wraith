@@ -37,7 +37,9 @@ class Wraith::GalleryGenerator
       info[:dir] = pnf.dirname.to_s
       @dirs << info
     end
-    @dirs=@dirs.select { |x| (x[:percent]||0).to_f > 0 }
+    if only_diff
+      @dirs=@dirs.select { |x| (x[:percent]||0).to_f > @wraith.threshold}
+    end
     @dirs = @dirs.sort do |x,y|
       s1 = (x[:percent]||0).to_f
       s2 = (y[:percent]||0).to_f
@@ -179,13 +181,15 @@ class Wraith::GalleryGenerator
   end
 
   def generate_diff_gallery(with_path="")
-    dest = "#{@location}/gallery_diff.html"
-    directories = generate_gallery_data
+    dest1 = "#{@location}/gallery_diff.html"
+    dest2 = "#{@location}/gallery_full.html"
+    d1 = generate_gallery_data true
+    d2 = generate_gallery_data false
     #logger.debug directories
     template = File.expand_path("gallery_template/#{wraith.gallery_template}.erb", File.dirname(__FILE__))
-    generate_html(@location, directories, template, dest, with_path)
-
-    report_gallery_status dest
+    generate_html(@location, d1, template, dest1, with_path)
+    generate_html(@location, d2, template, dest2, with_path)
+    report_gallery_status dest1
   end
 
   def generate_gallery(with_path = "")
