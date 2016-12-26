@@ -33,7 +33,7 @@ class Wraith::GalleryGenerator
       info[:toTH] = "thumbnails/#{info[:to]}"
       info[:diff] = info[:diff].gsub("#{wraith.directory}/", "")
       info[:diffTH] = "thumbnails/#{info[:diff]}"
-      info[:size] = match[1].to_i
+      info[:size] = match[1]
       info[:dir] = pnf.dirname.to_s
       @dirs << info
     end
