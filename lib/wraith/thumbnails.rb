@@ -13,8 +13,9 @@ class Wraith::Thumbnails
   end
 
   def generate_thumbnails
-    files = Dir.glob("#{wraith.directory}/*/*.png")
-
+    files = Dir.glob("#{wraith.directory}/*/*.png").select do |fn|
+      fn.index("#{wraith.directory}/thumbnails/") == nil
+    end
     Parallel.each(files, :in_processes => Parallel.processor_count) do |filename|
       new_name = filename.gsub(/^#{wraith.directory}/, "#{wraith.directory}/thumbnails")
       thumbnail_image(filename, new_name)

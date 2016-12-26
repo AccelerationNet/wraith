@@ -1,0 +1,9 @@
+3.3 - revamp wraith to streamline re-running
+  * dont delete files by default
+  * dont redo completed tasks
+  * flags for resetting (deleting output) and log levels
+  * timeout around render processes
+
+3.2.1.3a - fix freezing / runtime problems
+  * upgrade phantomjs engine
+  * watchdogs in some places

@@ -112,10 +112,12 @@ class Wraith::CLI < Thor
   end
 
   desc "compare_images [config_name]", "compares images to generate diffs"
-  def compare_images(config_name)
+  method_option :label1, :default=> "", :aliases => "-l1", :desc => "label the download eg:(_old)"
+  method_option :label2, :default=> "", :aliases => "-l2", :desc => "label the download eg:(_new)"
+  def compare_images(config_name, label1=nil, label2=nil)
     within_acceptable_limits do
       logger.info "COMPARING IMAGES"
-      compare = Wraith::CompareImages.new(config_name)
+      compare = Wraith::CompareImages.new(config_name, label1||options[:label1], label2||options[:label2])
       compare.compare_images
     end
   end
@@ -188,10 +190,12 @@ class Wraith::CLI < Thor
     save_images(config, true, label || options[:label])
   end
 
-  desc "compare_latest_iamges [config_name]", "get the latest images"
-  def compare_latest_images (config)
+  desc "compare_latest_images [config_name]", "get the latest images"
+  method_option :label1, :default=> "", :aliases => "-l1", :desc => "label the download eg:(_old)"
+  method_option :label2, :default=> "", :aliases => "-l2", :desc => "label the download eg:(_new)"
+  def compare_latest_images (config, label1=nil, label2=nil)
     logger.info Wraith::Validate.new(config).validate("latest")
-    compare_images(config)
+    compare_images(config, label1||options[:label1], label2||options[:label2])
   end
 
   desc "compare_latest_iamges [config_name]", "get the latest images"
@@ -203,7 +207,11 @@ class Wraith::CLI < Thor
   desc "latest_gallery [config_name]", "make a new gallery"
   def latest_gallery (config)
     logger.info Wraith::Validate.new(config).validate("latest")
-    generate_gallery(config)
+    within_acceptable_limits do
+      logger.info "GENERATING GALLERY #{config}"
+      gallery = Wraith::GalleryGenerator.new(config, false)
+      gallery.generate_diff_gallery
+    end
   end
 
   desc "latest [config_name]", "Capture new shots to compare with baseline"
@@ -237,6 +245,7 @@ class Wraith::CLI < Thor
 
   def initialize(*args)
     super
-    logger.debug "options:#{options} "
+    logger.debug "options:#{options}"
+    logger.level = options[:debug]||options[:verbose] ? Logger::DEBUG : Logger::INFO
   end
 end

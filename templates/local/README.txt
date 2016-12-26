@@ -8,9 +8,32 @@ To use wraith (after goign through all the install or using the docker method)  
 
 'bash local/fetch_after' - Will run the same domain again and create a folder new_shots.  it will also create two gallery html pages and open them up in Firefox.
 
-BUG NOTICE:
-
-Wraith currently has a bug where the load and snap processes can hang and eventually on a large site, it will stop processing files altogether.  There is a hawk monitor script (local/phantomjs_hawk) thyat automatically runs in the background to monitor the running phantomjs processes and kill off any that take longer than 60 seconds to run.  It will retry those processes five times before giving up.
-
 If you need to change the global configuration, edit the file local/wordpress.yaml, but you should not need to do so unless you want to change the number of threads, for instance.
 
+
+
+-----------------
+
+### Reset specific shot type remove files labeled "latest":
+
+wraith reset_shots --debug -l '_latest' local/wordpress.yaml
+
+### save "old" images
+
+wraith save_latest_images -l '_old' local/wordpress.yaml
+
+### save "new" images
+
+wraith save_latest_images -l '_new local/wordpress.yaml
+
+### compare "old" & "new" images
+
+wraith compare_latest_images -l1 '_old' -l2='_new' local/wordpress.yaml
+
+### make thumbs for it all
+
+wraith latest_thumbnails
+
+### make galleries for this
+
+wraith latest_gallery

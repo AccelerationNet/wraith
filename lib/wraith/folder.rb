@@ -37,11 +37,13 @@ class Wraith::FolderManager
   end
 
   def remove_labeled_shots(label)
-    Dir["#{dir}/**/*.png"].each do |filepath|
-      if filepath.end_with?( label + ".png" )
-          logger.debug "Removing labeled file #{filepath}"
-          File.delete(filepath)
-      end
+    Dir["#{dir}/**/*#{label}.png"].each do |filepath|
+      logger.debug "Removing labeled file #{filepath}"
+      File.delete(filepath)
+    end
+    Dir["#{dir}/**/*#{label}"].each do |filepath|
+      logger.debug "Removing labeled file #{filepath}"
+      File.delete(filepath)
     end
   end
 

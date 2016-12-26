@@ -1,4 +1,5 @@
 require "erb"
+require "pathname"
 require "pp"
 require "fileutils"
 require "wraith/wraith"
@@ -8,13 +9,40 @@ class Wraith::GalleryGenerator
   include Logging
   attr_reader :wraith
 
-  MATCH_FILENAME = /(\S+)_(\S+)\.\S+/
+  MATCH_FILENAME = /(\S+)_(\S+)_(\S+)\.\S+/
 
   def initialize(config, multi)
     @wraith = Wraith::Wraith.new(config)
     @location = wraith.directory
     @multi = multi
     @folder_manager = Wraith::FolderManager.new(config)
+  end
+
+  def generate_gallery_data (only_diff=true)
+    @dirs = []
+    Dir.glob("#{@location}/*/*_diff.txt").each do |fn|
+      info = eval(File.read(fn))
+      if not info[:diff]
+        info[:diff] = info[:from].gsub(/([a-zA-Z0-9]+).png$/, "_diff.png")
+      end
+      pnf = Pathname.new(info[:from])
+      match = MATCH_FILENAME.match(pnf.basename.to_s)
+      info[:size] = match[1].to_i
+      info[:dir] = pnf.dirname.to_s
+      @dirs << info
+    end
+    @dirs=@dirs.select { |x| (x[:percent]||0).to_f > 0 }
+    @dirs = @dirs.sort do |x,y|
+      s1 = (x[:percent]||0).to_f
+      s2 = (y[:percent]||0).to_f
+      if s1 < s2
+        1
+      elsif s1=s2
+        0
+      else
+        -1
+      end
+    end
   end
 
   def parse_directories(dirname)
@@ -87,10 +115,10 @@ class Wraith::GalleryGenerator
 
   def data_group(group, size_dict, dirname, filepath)
     case group
-    when "diff"
+    when "_diff"
       diff_check(size_dict, filepath)
-    when "data"
-      data_check(size_dict, dirname, filepath)
+    when "_diffamount"
+      diffamount_check(size_dict, dirname, filepath)
     else
       variant_check(size_dict, group)
     end
@@ -128,7 +156,7 @@ class Wraith::GalleryGenerator
   def sort_by_diffs(dirs)
     dirs.sort_by do |_category, sizes|
       size = select_size_with_biggest_diff sizes
-      -1 * size[1][:data]
+      -1 * (size[1][:data]||1000)
     end
   end
 
@@ -144,9 +172,21 @@ class Wraith::GalleryGenerator
     dirs.sort_by { |category, _sizes| category }
   end
 
+  def generate_diff_gallery(with_path="")
+    dest = "#{@location}/gallery_diff.html"
+    directories = generate_gallery_data
+    #logger.debug directories
+    template = File.expand_path("gallery_template/#{wraith.gallery_template}.erb", File.dirname(__FILE__))
+    generate_html(@location, directories, template, dest, with_path)
+
+    report_gallery_status dest
+  end
+
   def generate_gallery(with_path = "")
     dest = "#{@location}/gallery.html"
     directories = parse_directories(@location)
+    logger.info directories
+    return
 
     template = File.expand_path("gallery_template/#{wraith.gallery_template}.erb", File.dirname(__FILE__))
     generate_html(@location, directories, template, dest, with_path)
