@@ -24,9 +24,9 @@ If you need to change the global configuration, edit the file local/wordpress.ya
 
 ## Usage:
 
-### Reset specific shot type remove files labeled "latest":
+### Reset specific shot type remove files labeled "_old":
 
-wraith reset_shots --debug -l '_latest' local/wordpress.yaml
+wraith reset_shots --debug -l '_old' local/wordpress.yaml
 
 ### save "old" images
 
@@ -38,7 +38,7 @@ wraith save_latest_images -l '_new local/wordpress.yaml
 
 ### compare "old" & "new" images
 
-wraith compare_latest_images --label1 '_old' --label2='_new' local/wordpress.yaml
+wraith compare_latest_images --label1 '_old' --label2 '_new' local/wordpress.yaml
 
 ### make thumbs for it all
 

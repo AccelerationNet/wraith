@@ -127,9 +127,9 @@
       });
 
       $('.list-group .list-group-item a').unbind().on('click', function(){
-        var href = $(this).attr('href').substring(1);
+        var href = $(this).attr('href');
 
-        $('.slideshow').cycle($('.slide.'+href+':first').index());
+        $('.slideshow').cycle($('.slide'+href+':first').index());
       })
 
       $('.shot').unbind().on('click', function(e){
@@ -140,8 +140,8 @@
 
       $('.compare').unbind().on('click', function(){
         var slide = $(this).closest(".slide"),
-            newImage = slide.find('a.shot:eq(0)').attr('href'),
-            oldImage = slide.find('a.shot:eq(1)').attr('href'),
+            oldImage = slide.find('a.shot:eq(0)').attr('href'),
+            newImage = slide.find('a.shot:eq(1)').attr('href'),
             diffImage = slide.find('a.shot:eq(2)').attr('href');
         $('.container').append('<div class="compare-modal"><div class="compare-container"><img src="'+newImage+'"/><img src="'+oldImage+'"/><img src="'+diffImage+'"/></div></div>');
         $('.compare-modal').unbind().on('click', function(){
@@ -161,8 +161,8 @@
           </div>
           <div class="panel-heading">Pages:</div>
           <ul class="list-group list-group-flush">
-            <% directories.each do |info| %>
-            <li class="list-group-item"><a href="#<%=path%><%=dir%>"><span>/<%=info[:dir].gsub('__', '/')%></span></a></li>
+            <% diffs.each do |info| %>
+            <li class="list-group-item"><a href="#dir<%= info[:idx] %>"><span>/<%=info[:dir].gsub('__', '/')%></span></a></li>
             <% end %>
           </ul>
         </div>
@@ -171,8 +171,8 @@
         <div class="slideshow-container">
           <div class="prev col-sm-1"><span></span></div>
           <div class="slideshow pull-left col-sm-10">
-            <% directories.each do |info| %>
-            <div class="row slide <%= dir %>">
+            <% diffs.each do |info| %>
+            <div id="dir<%= info[:idx] %>" class="row slide <%= dir %>">
               <a class="path" name="<%= dir %>"></a>
               <div class="col-sm-12 text-center">
                 <h4><%= info[:size] %>px - /<%= info[:dir].gsub('__', '/') %></h4>
