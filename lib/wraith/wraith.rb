@@ -115,7 +115,14 @@ class Wraith::Wraith
   end
 
   def paths
-    @config["paths"]
+    p = @config["paths"]
+    if !p && File.exists?(spider_file)
+      logger.debug "Read the spider file...."
+      p = File.read(spider_file)
+      @config["paths"] = eval(p)
+    else
+      p
+    end
   end
 
   def fuzz
@@ -176,5 +183,26 @@ class Wraith::Wraith
 
   def num_threads
     (@config["num_threads"] || 8).to_i
+  end
+
+  def clear_shots_folder
+    FileUtils.rm_rf("#{dir}")
+    FileUtils.mkdir_p("#{dir}")
+  end
+
+  def remove_labeled_shots(label)
+    Dir["#{directory}/**/*#{label}.png"].each do |filepath|
+      logger.debug "Removing labeled file #{filepath}"
+      File.delete(filepath)
+    end
+    Dir["#{directory}/**/*#{label}"].each do |filepath|
+      logger.debug "Removing labeled file #{filepath}"
+      File.delete(filepath)
+    end
+  end
+  def create_folders
+    unless File.directory?(directory)
+      FileUtils.mkdir_p(directory)
+    end
   end
 end

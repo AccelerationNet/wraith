@@ -4,7 +4,6 @@ require "bundler/gem_tasks"
 require "wraith/save_images"
 require "wraith/crop"
 require "wraith/spider"
-require "wraith/folder"
 require "wraith/thumbnails"
 require "wraith/compare_images"
 require "wraith/gallery"
@@ -23,12 +22,12 @@ task :default => [:reset_shots_folder, :check_for_paths, :setup_folders, :save_i
 end
 
 task :reset_shots_folder do
-  reset = Wraith::FolderManager.new(@config)
+  reset = Wraith::Wraith.new(@config)
   reset.clear_shots_folder
 end
 
 task :setup_folders do
-  create = Wraith::FolderManager.new(@config)
+  create = Wraith::Wraith.new(@config)
   create.create_folders
 end
 

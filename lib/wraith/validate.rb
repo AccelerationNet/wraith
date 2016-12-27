@@ -6,8 +6,8 @@ class Wraith::Validate
   include Logging
   attr_reader :wraith
 
-  def initialize(config, yaml_passed = false)
-    @wraith = Wraith::Wraith.new(config, yaml_passed)
+  def initialize(wraith)
+    @wraith = wraith
   end
 
   def validate(mode = false)

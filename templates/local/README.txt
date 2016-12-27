@@ -26,27 +26,27 @@ If you need to change the global configuration, edit the file local/wordpress.ya
 
 ### Reset specific shot type remove files labeled "_old":
 
-wraith reset_shots --debug -l '_old' local/wordpress.yaml
+wraith reset_shots --debug -l '_old' -c local/wordpress.yaml
 
 ### save "old" images
 
-wraith save_latest_images -l '_old' local/wordpress.yaml
+wraith save_latest_images -l '_old' -c local/wordpress.yaml
 
 ### save "new" images
 
-wraith save_latest_images -l '_new local/wordpress.yaml
+wraith save_latest_images -l '_new -c local/wordpress.yaml
 
 ### compare "old" & "new" images
 
-wraith compare_latest_images --label1 '_old' --label2 '_new' local/wordpress.yaml
+wraith compare_latest_images --label1 '_old' --label2 '_new' -c local/wordpress.yaml
 
 ### make thumbs for it all
 
-wraith latest_thumbnails local/wordpress.yaml
+wraith latest_thumbnails -c local/wordpress.yaml
 
 ### make galleries for this
 
-wraith latest_gallery local/wordpress.yaml
+wraith latest_gallery -c local/wordpress.yaml
 
 
 ## Example Conf

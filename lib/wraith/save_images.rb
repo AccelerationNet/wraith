@@ -48,20 +48,15 @@ class Wraith::SaveImages
   include Logging
   attr_reader :wraith, :history, :meta
 
-  def initialize(config, history = false, yaml_passed = false, label=nil)
-    @wraith = Wraith::Wraith.new(config, yaml_passed)
+  def initialize(wraith, history = false, yaml_passed = false, label=nil)
+    @wraith = wraith
     @history = history
     @meta = SaveMetadata.new(@wraith, history, label=label)
     logger.info "Save meta with label #{label}"
   end
 
   def check_paths
-    if !wraith.paths
-      path = File.read(wraith.spider_file)
-      eval(path)
-    else
-      wraith.paths
-    end
+    wraith.paths
   end
 
   def save_images
@@ -127,8 +122,11 @@ class Wraith::SaveImages
   end
 
   def attempt_image_capture(capture_page_image, filename)
-    max_attempts = 10
+    unless File.directory?(File.dirname(output_path))
+      FileUtils.mkdir_p(File.dirname(output_path))
+    end
     return true if image_was_created filename
+    max_attempts = 10
     max_attempts.times do |i|
       run_command capture_page_image
       return true if image_was_created filename
@@ -144,14 +142,6 @@ class Wraith::SaveImages
       return true
     end
     return false
-  end
-
-  def create_invalid_image(filename, width)
-    logger.warn "Using fallback image instead"
-    invalid = File.expand_path("../../assets/invalid.jpg", File.dirname(__FILE__))
-    FileUtils.mkdir_p(File.dirname(filename))
-    FileUtils.cp invalid, filename
-    set_image_width(filename, width)
   end
 
   def set_image_width(image, width)

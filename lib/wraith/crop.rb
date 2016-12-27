@@ -8,8 +8,8 @@ class Wraith::CropImages
   include Logging
   attr_reader :wraith
 
-  def initialize(config)
-    @wraith = Wraith::Wraith.new(config)
+  def initialize(wraith)
+    @wraith = wraith
   end
 
   def crop_images

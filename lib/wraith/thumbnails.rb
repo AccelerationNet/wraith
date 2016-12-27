@@ -8,8 +8,8 @@ class Wraith::Thumbnails
   include Logging
   attr_reader :wraith
 
-  def initialize(config)
-    @wraith = Wraith::Wraith.new(config)
+  def initialize(wraith)
+    @wraith = wraith
   end
 
   def generate_thumbnails

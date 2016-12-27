@@ -9,8 +9,8 @@ class Wraith::CompareImages
   include Logging
   attr_reader :wraith
 
-  def initialize(config, lbl1=nil, lbl2=nil)
-    @wraith = Wraith::Wraith.new(config)
+  def initialize(wraith, lbl1=nil, lbl2=nil)
+    @wraith = wraith
     @label1 = lbl1
     @label2 = lbl2
   end

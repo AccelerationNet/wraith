@@ -11,8 +11,8 @@ class Wraith::GalleryGenerator
 
   MATCH_FILENAME = /([^_\s\/]+)_(\S+)\.\S+/
 
-  def initialize(config)
-    @wraith = Wraith::Wraith.new(config)
+  def initialize(wraith)
+    @wraith = wraith
     @location = wraith.directory
   end
 

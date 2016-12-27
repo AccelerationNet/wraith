@@ -8,8 +8,8 @@ class Wraith::Spidering
   include Logging
   attr_reader :wraith
 
-  def initialize(config)
-    @wraith = Wraith::Wraith.new(config)
+  def initialize(wraith)
+    @wraith = wraith
   end
 
   def check_for_paths
@@ -42,6 +42,7 @@ class Wraith::Spider
   private
 
   def write_file
+    wraith.create_folders()
     File.open(wraith.spider_file, "w+") { |file| file.write(@paths) }
   end
 
