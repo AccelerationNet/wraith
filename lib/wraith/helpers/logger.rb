@@ -3,18 +3,17 @@ require "logger"
 
 module Logging
   # This is the magical bit that gets mixed into your classes
+  @@logger  = Logger.new(STDOUT)
+  @@logger.formatter = proc do |severity, _datetime, _progname, msg|
+    (severity == "INFO") ? "#{msg}\n" : "#{severity}: #{msg}\n"
+  end
+
   def logger
-    Logging.logger
+    @@logger
   end
 
   # Global, memoized, lazy initialized instance of a logger
   def self.logger
-    unless @logger
-      @logger = Logger.new(STDOUT)
-      @logger.formatter = proc do |severity, _datetime, _progname, msg|
-        (severity == "INFO") ? "#{msg}\n" : "#{severity}: #{msg}\n"
-      end
-    end
-    @logger
+    @@logger
   end
 end
