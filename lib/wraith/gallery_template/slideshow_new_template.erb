@@ -162,7 +162,11 @@
           <div class="panel-heading">Pages:</div>
           <ul class="list-group list-group-flush">
             <% diffs.each do |info| %>
-            <li class="list-group-item"><a href="#dir<%= info[:idx] %>"><span>/<%=info[:dir].gsub('__', '/')%></span></a></li>
+            <li class="list-group-item">
+              <a href="#dir<%= info[:idx] %>">
+                <span class="path">/<%=info[:dir].gsub('__', '/')%></span>
+                <span class="size"><%=info[:size]%></span>
+            </a></li>
             <% end %>
           </ul>
         </div>

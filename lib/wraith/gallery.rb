@@ -9,7 +9,7 @@ class Wraith::GalleryGenerator
   include Logging
   attr_reader :wraith
 
-  MATCH_FILENAME = /(\S+)_(\S+)\.\S+/
+  MATCH_FILENAME = /([^_\s\/]+)_(\S+)\.\S+/
 
   def initialize(config)
     @wraith = Wraith::Wraith.new(config)
@@ -27,13 +27,13 @@ class Wraith::GalleryGenerator
       end
       pnf = Pathname.new(info[:from])
       match = MATCH_FILENAME.match(pnf.basename.to_s)
+      info[:size] = match[1].to_s if not info[:size]
       info[:from] = info[:from].gsub("#{wraith.directory}/", "")
       info[:fromTH] = "thumbnails/#{info[:from]}"
       info[:to] = info[:to].gsub("#{wraith.directory}/", "")
       info[:toTH] = "thumbnails/#{info[:to]}"
       info[:diff] = info[:diff].gsub("#{wraith.directory}/", "")
       info[:diffTH] = "thumbnails/#{info[:diff]}"
-      info[:size] = match[1]
       info[:dir] = pnf.dirname.to_s
       info[:idx] = idx
       @dirs << info
@@ -41,17 +41,21 @@ class Wraith::GalleryGenerator
     if only_diff
       @dirs=@dirs.select { |x| (x[:percent]||0).to_f > @wraith.threshold}
     end
-    @dirs = @dirs.sort do |x,y|
-      s1 = (x[:percent]||0).to_f
-      s2 = (y[:percent]||0).to_f
-      return 1 if s1 < s2
-      return -1 if s1 > s2
+    @dirs = @dirs.sort( &lambda{|x,y|
+      p1 = (x[:percent]||0).to_f
+      p2 = (y[:percent]||0).to_f
+      return 1 if p1 < p2
+      return -1 if p1 > p2
       f1 = (x[:from]||"")
       f2 = (y[:from]||"")
       return 1 if f1 > f2
       return -1 if f1 < f2
+      s1 = (x[:size]||0).to_f
+      s2 = (y[:size]||0).to_f
+      return 1 if s1 > s2
+      return -1 if s1 < s2
       0
-    end
+    })
   end
 
   def generate_diff_gallery(with_path="")
@@ -63,8 +67,9 @@ class Wraith::GalleryGenerator
     template = File.expand_path("gallery_template/#{wraith.gallery_template}.erb", File.dirname(__FILE__))
     generate_html(@location, d1, template, dest1, with_path)
     generate_html(@location, d2, template, dest2, with_path)
-    report_gallery_status dest1
-    report_gallery_status dest2
+    logger.info "Gallery generated"
+    prompt_user_to_open_gallery dest1
+    prompt_user_to_open_gallery dest2
   end
 
   def generate_gallery(with_path = "")
@@ -83,13 +88,6 @@ class Wraith::GalleryGenerator
     File.open(destination, "w") do |outf|
       outf.write(html)
     end
-  end
-
-  def report_gallery_status(dest)
-    logger.info "Gallery generated"
-    failed = check_failed_shots
-    prompt_user_to_open_gallery dest
-    exit 1 if failed
   end
 
   def prompt_user_to_open_gallery(dest)

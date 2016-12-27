@@ -135,7 +135,7 @@ class Wraith::CLI < Thor
   def generate_gallery(config_name, multi = false)
     within_acceptable_limits do
       logger.info "GENERATING GALLERY"
-      gallery = Wraith::GalleryGenerator.new(config_name, multi)
+      gallery = Wraith::GalleryGenerator.new(config_name)
       gallery.generate_gallery
     end
   end
@@ -152,7 +152,7 @@ class Wraith::CLI < Thor
       crop_images(config)
       compare_images(config)
       generate_thumbnails(config)
-      generate_gallery(config, multi)
+      generate_gallery(config)
     end
   end
 
@@ -190,6 +190,7 @@ class Wraith::CLI < Thor
     check_for_paths(config)
     setup_folders(config)
     save_images(config, true, label || options[:label])
+    generate_thumbnails(config)
   end
 
   desc "compare_latest_images [config_name]", "get the latest images"
@@ -198,6 +199,7 @@ class Wraith::CLI < Thor
   def compare_latest_images (config, label1=nil, label2=nil)
     logger.info Wraith::Validate.new(config).validate("latest")
     compare_images(config, label1||options[:label1], label2||options[:label2])
+    generate_thumbnails(config)
   end
 
   desc "compare_latest_iamges [config_name]", "get the latest images"
@@ -210,8 +212,9 @@ class Wraith::CLI < Thor
   def latest_gallery (config)
     logger.info Wraith::Validate.new(config).validate("latest")
     within_acceptable_limits do
+      generate_thumbnails(config)
       logger.info "GENERATING GALLERY #{config}"
-      gallery = Wraith::GalleryGenerator.new(config, false)
+      gallery = Wraith::GalleryGenerator.new(config)
       gallery.generate_diff_gallery
     end
   end
@@ -233,12 +236,6 @@ class Wraith::CLI < Thor
 
   desc "test_logging [config_name]", "tests the logging"
   method_option :level, :default=>Logger::WARN, :desc=> "the level the logger writes at"
-  def test_logging (config=nil)
-    puts "--- In test logger ---"
-    logger.info "Testing the logger at: #{logger.level}"
-    logger.debug "Debug: Testing the logger at: #{logger.level}"
-  end
-
   desc "version", "Show the version of Wraith"
   map ["--version", "-version", "-v"] => "version"
   def version
@@ -248,6 +245,6 @@ class Wraith::CLI < Thor
   def initialize(*args)
     super
     logger.debug "options:#{options}"
-    logger.level = options[:debug]||options[:verbose] ? Logger::DEBUG : Logger::INFO
+    logger.level = (options[:debug] || options[:verbose]) ? Logger::DEBUG : Logger::INFO
   end
 end

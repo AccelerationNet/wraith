@@ -69,14 +69,17 @@ class Wraith::CompareImages
     cmdline = "compare -dissimilarity-threshold 1 -fuzz #{wraith.fuzz} -metric AE -highlight-color #{wraith.highlight_color} #{base} #{compare.shellescape} #{diff}"
     px_value = Open3.popen3(cmdline) { |_stdin, _stdout, stderr, _wait_thr| stderr.read }.to_f
     begin
-      img_size = ImageSize.path(diff).size.inject(:*)
+      img = ImageSize.path(diff)
+      img_size = img.size.inject(:*)
       amount = percentage(img_size, px_value, info)
       File.open(info, "w") { |file|
-        file.write({:from=>base, :to=>compare, :percent=>amount, :diff=>diff}.to_s)
+        file.write({:from=>base, :to=>compare, size: img.size.join(","),
+                    :width=> img.width, :height=> img.height,
+                    :percent=>amount, :diff=>diff}.to_s)
       }
       logger.info "Saved diff #{info}"
-    rescue
-      logger.error "Error saving diff file #{info}"
+    rescue Exception => e
+      logger.error "Error saving diff file #{info}, #{e}"
     end
 
   end

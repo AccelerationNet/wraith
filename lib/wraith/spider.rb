@@ -55,7 +55,6 @@ end
 
 class Wraith::Crawler < Wraith::Spider
   include Logging
-
   EXT = %w(flv swf png jpg gif asx zip rar tar 7z \
            gz jar js css dtd xsd ico raw mp3 mp4 \
            wav wmv ape aac ac3 wma aiff mpg mpeg \
