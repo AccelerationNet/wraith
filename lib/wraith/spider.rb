@@ -3,6 +3,7 @@ require "wraith/helpers/logger"
 require "anemone"
 require "nokogiri"
 require "uri"
+require "time"
 
 class Wraith::Spidering
   attr_reader :wraith
@@ -25,10 +26,16 @@ end
 
 class Wraith::Spider
   attr_reader :wraith
+  attr_accessor :visits
 
   def initialize(wraith)
     @wraith = wraith
     @paths = {}
+    @visits=0
+    @start=Time.new()
+  end
+  def elapsed ()
+    Time.new()-@start
   end
 
   def determine_paths
@@ -46,10 +53,14 @@ class Wraith::Spider
   def pkey (path)
     path == "/" ? "home" : path.gsub("/", "__").chomp("__").downcase
   end
+  def path_exists?(path)
+    k = pkey(path)
+    @paths[k]
+  end
   def add_path(path)
     k = pkey(path)
     if path && !@paths[k]
-      $logger.debug "Spider adding (#{@paths.count}): #{path}"
+      $logger.debug "Spider adding (#{@paths.count} paths/#{@visits} visits, #{elapsed}s): #{path}"
       @paths[k] = path.downcase
       write_file
     end
@@ -63,7 +74,7 @@ class Wraith::Crawler < Wraith::Spider
   EXT = %w(flv swf png jpg gif asx zip rar tar 7z \
            gz jar js css dtd xsd ico raw mp3 mp4 \
            wav wmv ape aac ac3 wma aiff mpg mpeg \
-           avi mov ogg mkv mka asx asf mp2 m1v \
+           avi mov ogg mkv mka asx asf mp2 m1v rtf \
            m3u f4v pdf doc docx xls xlsx ppt pptx pps ppsx bin exe rss xml)
 
   def spider
@@ -78,8 +89,23 @@ class Wraith::Crawler < Wraith::Spider
         anemone.skip_links_like(/\.(#{EXT.join('|')})$/)
         # Add user specified skips
         anemone.skip_links_like(wraith.spider_skips)
+        anemone.focus_crawl { |page|
+          links = page.links.select { |link|
+            pth = link.path
+            rtn = false
+            m = pth.match(/\.(#{EXT.join('|')})$/)
+            if !m && !path_exists?(pth)
+              rtn = true
+              add_path(pth)
+            end
+            # $logger.info "SP: #{link.path} #{rtn} #{ m }"
+            rtn
+          }
+          # $logger.info "Gonna search: #{links}"
+          links
+        }
         anemone.on_every_page { |page|
-          add_path(page.url.path)
+          @visits += 1
         }
       end
     end

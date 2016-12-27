@@ -1,19 +1,22 @@
-These are tools local for Acceleration.net usage
+# Wraith
+
+Wraith is for rool for making screen shots of websites and comparing
+the screenshots
+
+## Instuctions
 
 To use wraith (after goign through all the install or using the docker
 method) NOTE: You MUST be running the custom acceleration fork of
 wraith, and not the BBC version.
 
-'wraith setup' - will generate the sample configs and these tools
-
-create a 'local/{site}.yaml' file for the site
-
-'bash local/fetch_before' - will ask you for the domain to search before doign a migration.  It will store the files in a folder named old_shots.
-
-'bash local/fetch_after' - Will run the same domain again and create a folder new_shots.  it will also create two gallery html pages and open them up in Firefox.
-
-If you need to change the global configuration, edit the file local/wordpress.yaml, but you should not need to do so unless you want to change the number of threads, for instance.
-
+ * Create a folder to work in eg: `~/site-diffs`.
+ * Create a `~/site-diffs/{site}.yaml` with the basic config from beloow
+ * wraith save_latest_images -l '_old' -c ~/site-diffs/{site}.yaml
+ * make whatever changes to the site (include put on a new server or
+   change hosts file / dns)
+ * wraith save_latest_images -l '_new' -c ~/site-diffs/{site}.yaml
+ * wraith compare_images --label1 '_old' --label2 '_new' -c $CONFIG_FILE
+ * This should put two galleries in place in the output folder
 
 ## Usage:
 
