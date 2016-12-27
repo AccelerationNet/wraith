@@ -11,6 +11,10 @@ class Wraith::Wraith
     $logger.level = verbose ? Logger::DEBUG : $logger.level
   end
 
+  def gem_root
+    File.expand_path '../../..', __FILE__
+  end
+
   def open_config_file(config_name)
     possible_filenames = [
       config_name,
@@ -71,7 +75,8 @@ class Wraith::Wraith
   end
 
   def before_capture
-    @config["before_capture"] ? convert_to_absolute(@config["before_capture"]) : false
+    @config["before_capture"] ? convert_to_absolute(@config["before_capture"]) :
+      convert_to_absolute('javascript/disable_javascript--phantom.js')
   end
 
   def widths

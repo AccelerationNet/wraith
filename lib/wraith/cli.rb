@@ -186,7 +186,7 @@ class Wraith::CLI < Thor
   desc "version", "Show the version of Wraith"
   map ["--version", "-version", "-v"] => "version"
   def version
-    $logger.info Wraith::VERSION
+    $logger.info "#{Wraith::VERSION} - #{@wraith.gem_root}"
   end
 
   attr_reader :wraith

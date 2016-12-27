@@ -1,6 +1,7 @@
 require "wraith/helpers/custom_exceptions"
 
 def convert_to_absolute(filepath)
+  gem_root = File.expand_path '../../../../', __FILE__
   if !filepath
     "false"
   elsif filepath[0] == "/"
@@ -11,6 +12,6 @@ def convert_to_absolute(filepath)
     filepath
   else
     # filepath is relative. it must be converted to absolute
-    "#{Dir.pwd}/#{filepath}"
+    "#{gem_root}/templates/#{filepath}"
   end
 end
