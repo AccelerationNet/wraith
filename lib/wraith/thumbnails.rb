@@ -5,7 +5,6 @@ require "fileutils"
 require "shellwords"
 
 class Wraith::Thumbnails
-  include Logging
   attr_reader :wraith
 
   def initialize(wraith)
@@ -31,6 +30,6 @@ class Wraith::Thumbnails
     end
 
     `convert #{png_path.shellescape} -thumbnail 200 -crop #{wraith.thumb_width.to_s}x#{wraith.thumb_height.to_s}+0+0 #{output_path.shellescape}`
-    logger.info "Created thumbnail #{output_path}"
+    $logger.info "Created thumbnail #{output_path}"
   end
 end

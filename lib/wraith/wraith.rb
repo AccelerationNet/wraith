@@ -3,12 +3,12 @@ require "wraith/helpers/logger"
 require "wraith/helpers/utilities"
 
 class Wraith::Wraith
-  include Logging
   attr_accessor :config
+  attr_accessor :debug
 
   def initialize(config, yaml_passed = false)
     @config = yaml_passed ? config : open_config_file(config)
-    logger.level = verbose ? Logger::DEBUG : Logger::INFO
+    $logger.level = verbose ? Logger::DEBUG : $logger.level
   end
 
   def open_config_file(config_name)
@@ -31,7 +31,13 @@ class Wraith::Wraith
 
   def directory
     # Legacy support for those using array configs
-    @config["directory"].is_a?(Array) ? @config["directory"].first : @config["directory"]
+    d = @config["directory"]
+    d = d.first if d.is_a?(Array)
+    d = File.expand_path(d)
+    FileUtils.mkdir_p(d) unless File.exist? d
+    d = File.realpath(d)
+    d = "~/.wraith/#{base_domain}/" unless d
+    d
   end
 
   def history_dir
@@ -40,6 +46,7 @@ class Wraith::Wraith
 
   def engine
     engine = @config["browser"]
+    engine = "phantomjs" unless engine
     # Legacy support for those using the old style "browser: \n phantomjs: 'casperjs'" configs
     engine = engine.values.first if engine.is_a? Hash
     engine
@@ -58,7 +65,7 @@ class Wraith::Wraith
       path_to_js_templates + "/casper.js"
     # @TODO - add a SlimerJS option
     else
-      logger.error "Wraith does not recognise the browser engine '#{engine}'"
+      $logger.error "Wraith does not recognise the browser engine '#{engine}'"
     end
   end
 
@@ -67,7 +74,7 @@ class Wraith::Wraith
   end
 
   def widths
-    @config["screen_widths"]
+    @config["screen_widths"] || [1800]
   end
 
   def resize
@@ -99,6 +106,11 @@ class Wraith::Wraith
     @config["spider_file"] ? @config["spider_file"] : "#{directory}/spider.txt"
   end
 
+
+  def spider_depth
+    @config["spider_depth"] || false
+  end
+
   def spider_days
     s = @config["spider_days"]
     s = s[0] if s.kind_of?(Array)
@@ -117,7 +129,7 @@ class Wraith::Wraith
   def paths
     p = @config["paths"]
     if !p && File.exists?(spider_file)
-      logger.debug "Read the spider file...."
+      $logger.debug "Read the spider file...."
       p = File.read(spider_file)
       @config["paths"] = eval(p)
     else
@@ -126,27 +138,19 @@ class Wraith::Wraith
   end
 
   def fuzz
-    @config["fuzz"]
+    @config["fuzz"] || '2%'
   end
 
   def highlight_color
     @config["highlight_color"] ? @config["highlight_color"] : "blue"
   end
 
-  def mode
-    if %w(diffs_only diffs_first alphanumeric).include?(@config["mode"])
-      @config["mode"]
-    else
-      "alphanumeric"
-    end
-  end
-
   def threshold
-    @config["threshold"] ? @config["threshold"] : 0
+    @config["threshold"] ? @config["threshold"] : 5
   end
 
   def gallery_template
-    default = "basic_template"
+    default = "slideshow_new_template"
     if @config["gallery"].nil?
       default
     else
@@ -177,8 +181,7 @@ class Wraith::Wraith
   end
 
   def verbose
-    # @TODO - also add a `--verbose` CLI flag which overrides whatever you have set in the config
-    @config["verbose"] || false
+    @config["verbose"] || @debug || false
   end
 
   def num_threads
@@ -192,11 +195,11 @@ class Wraith::Wraith
 
   def remove_labeled_shots(label)
     Dir["#{directory}/**/*#{label}.png"].each do |filepath|
-      logger.debug "Removing labeled file #{filepath}"
+      $logger.debug "Removing labeled file #{filepath}"
       File.delete(filepath)
     end
     Dir["#{directory}/**/*#{label}"].each do |filepath|
-      logger.debug "Removing labeled file #{filepath}"
+      $logger.debug "Removing labeled file #{filepath}"
       File.delete(filepath)
     end
   end

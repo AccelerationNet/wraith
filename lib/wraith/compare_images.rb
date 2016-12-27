@@ -6,7 +6,6 @@ require "parallel"
 require "shellwords"
 
 class Wraith::CompareImages
-  include Logging
   attr_reader :wraith
 
   def initialize(wraith, lbl1=nil, lbl2=nil)
@@ -30,17 +29,9 @@ class Wraith::CompareImages
       if File.exists? f2
         compare_task(f1, f2)
       else
-        logger.error("Missing file #{f2} writing dummy diff")
+        $logger.error("Missing file #{f2} writing dummy diff")
       end
     end
-  end
-
-  def create_invalid_image(filename, width)
-    logger.warn "Using fallback image instead"
-    invalid = File.expand_path("../../assets/invalid.jpg", File.dirname(__FILE__))
-    FileUtils.mkdir_p(File.dirname(filename))
-    FileUtils.cp invalid, filename
-    set_image_width(filename, width)
   end
 
   def compare_images
@@ -58,12 +49,12 @@ class Wraith::CompareImages
   end
 
   def compare_task(base, compare)
-    logger.debug "Comparing #{base} and #{compare}"
+    $logger.debug "Comparing #{base} and #{compare}"
     diff = base.gsub(/([a-zA-Z0-9]+).png$/, "_diff.png")
     info = base.gsub(/([a-zA-Z0-9]+).png$/, "_diff.txt")
 
     if File.exists? diff
-      logger.info "Diff exists #{diff}"
+      $logger.info "Diff exists #{diff}"
       return
     end
     cmdline = "compare -dissimilarity-threshold 1 -fuzz #{wraith.fuzz} -metric AE -highlight-color #{wraith.highlight_color} #{base} #{compare.shellescape} #{diff}"
@@ -73,13 +64,17 @@ class Wraith::CompareImages
       img_size = img.size.inject(:*)
       amount = percentage(img_size, px_value, info)
       File.open(info, "w") { |file|
-        file.write({:from=>base, :to=>compare, size: img.size.join(","),
-                    :width=> img.width, :height=> img.height,
-                    :percent=>amount, :diff=>diff}.to_s)
+        file.write({:from=>base,
+                    :to=>compare,
+                    size: img.size.join(","),
+                    :width=> img.width,
+                    :height=> img.height,
+                    :percent=>amount,
+                    :diff=>diff}.to_s)
       }
-      logger.info "Saved diff #{info}"
+      $logger.info "Saved diff #{info}"
     rescue Exception => e
-      logger.error "Error saving diff file #{info}, #{e}"
+      $logger.error "Error saving diff file #{info}, #{e}"
     end
 
   end

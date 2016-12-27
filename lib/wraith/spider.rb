@@ -5,7 +5,6 @@ require "nokogiri"
 require "uri"
 
 class Wraith::Spidering
-  include Logging
   attr_reader :wraith
 
   def initialize(wraith)
@@ -13,16 +12,14 @@ class Wraith::Spidering
   end
 
   def check_for_paths
-    if wraith.paths.nil?
-      unless wraith.sitemap.nil?
-        logger.info "no paths defined in config, loading paths from sitemap"
-        spider = Wraith::Sitemap.new(wraith)
-      else
-        logger.info "no paths defined in config, crawling from site root"
-        spider = Wraith::Crawler.new(wraith)
-      end
-      spider.determine_paths
+    unless wraith.sitemap.nil?
+      $logger.info "no paths defined in config, loading paths from sitemap"
+      spider = Wraith::Sitemap.new(wraith)
+    else
+      $logger.info "no paths defined in config, crawling from site root"
+      spider = Wraith::Crawler.new(wraith)
     end
+    spider.determine_paths
   end
 end
 
@@ -46,8 +43,16 @@ class Wraith::Spider
     File.open(wraith.spider_file, "w+") { |file| file.write(@paths) }
   end
 
+  def pkey (path)
+    path == "/" ? "home" : path.gsub("/", "__").chomp("__").downcase
+  end
   def add_path(path)
-    @paths[path == "/" ? "home" : path.gsub("/", "__").chomp("__").downcase] = path.downcase
+    k = pkey(path)
+    if path && !@paths[k]
+      $logger.debug "Spider adding (#{@paths.count}): #{path}"
+      @paths[k] = path.downcase
+      write_file
+    end
   end
 
   def spider
@@ -55,39 +60,43 @@ class Wraith::Spider
 end
 
 class Wraith::Crawler < Wraith::Spider
-  include Logging
   EXT = %w(flv swf png jpg gif asx zip rar tar 7z \
            gz jar js css dtd xsd ico raw mp3 mp4 \
            wav wmv ape aac ac3 wma aiff mpg mpeg \
            avi mov ogg mkv mka asx asf mp2 m1v \
-           m3u f4v pdf doc xls ppt pps bin exe rss xml)
+           m3u f4v pdf doc docx xls xlsx ppt pptx pps ppsx bin exe rss xml)
 
   def spider
-    if File.exist?(wraith.spider_file) && modified_since(wraith.spider_file, wraith.spider_days)
-      logger.info "using existing spider file"
+    if not expired_crawl?( wraith.spider_file, wraith.spider_days )
+      $logger.info "Using existing crawl #{wraith.spider_file} (use --reset)"
       @paths = eval(File.read(wraith.spider_file))
     else
-      logger.info "creating new spider file"
-      Anemone.crawl(wraith.base_domain) do |anemone|
+      $logger.info "creating new spider file"
+      Anemone.crawl(wraith.base_domain, {
+                      :discard_page_bodies=>true,
+                      :depth_limit=>wraith.spider_depth}) do |anemone|
         anemone.skip_links_like(/\.(#{EXT.join('|')})$/)
         # Add user specified skips
         anemone.skip_links_like(wraith.spider_skips)
-        anemone.on_every_page { |page| add_path(page.url.path) }
+        anemone.on_every_page { |page|
+          add_path(page.url.path)
+        }
       end
     end
   end
 
-  def modified_since(file, since)
-    (Time.now - File.ctime(file)) / (24 * 3600) < since
+  def expired_crawl? (file, since)
+    return true if !File.exist? file
+    exp = (Time.now - File.ctime(file)) / (24 * 3600)
+    $logger.debug "Existing #{file} is #{exp}days old"
+    exp > since
   end
 end
 
 class Wraith::Sitemap < Wraith::Spider
-  include Logging
-
   def spider
     unless wraith.sitemap.nil?
-      logger.info "reading sitemap.xml from #{wraith.sitemap}"
+      $logger.info "reading sitemap.xml from #{wraith.sitemap}"
       if wraith.sitemap =~ URI.regexp
         sitemap = Nokogiri::XML(open(wraith.sitemap))
       else

@@ -1,6 +1,6 @@
 #!/bin/bash
 CONFIG_FILE=${1:-"local/wordpress.yaml"}
 ### Start a new history session
-wraith save_latest_images -l '_old' $CONFIG_FILE
 
+wraith save_latest_images -l '_old' -c $CONFIG_FILE
 echo "Now migrate the site and then run the script 'bash local/fetch_after' for the comparisons."

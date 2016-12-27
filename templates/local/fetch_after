@@ -1,10 +1,8 @@
 #!/bin/bash
 
 CONFIG_FILE=${1:-"local/wordpress.yaml"}
-wraith save_latest_images -l '_new' $CONFIG_FILE
-wraith compare_latest_images --label1 '_old' --label2='_new' $CONFIG_FILE
-wraith latest_thumbnails $CONFIG_FILE
-wraith latest_gallery $CONFIG_FILE
+wraith save_latest_images -l '_new' -c $CONFIG_FILE
+wraith compare_images --label1 '_old' --label2='_new' -c $CONFIG_FILE
 
 ### Bring up both galleries up in forefox
 echo " "

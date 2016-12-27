@@ -7,13 +7,6 @@ wraith, and not the BBC version.
 'wraith setup' - will generate the sample configs and these tools
 
 create a 'local/{site}.yaml' file for the site
-  domains:
-    wordpress: "http://{site-name.com}"
-  directory: "{site-name.com}"
-  gallery:
-    template: 'slideshow_new_template' # Examples: 'basic_template' (default), 'slideshow_template'
-    thumb_width:  200
-    thumb_height: 200
 
 'bash local/fetch_before' - will ask you for the domain to search before doign a migration.  It will store the files in a folder named old_shots.
 
@@ -24,17 +17,21 @@ If you need to change the global configuration, edit the file local/wordpress.ya
 
 ## Usage:
 
+### Create a spider.txt file to use in all following processes
+
+wraith spider --debug [--reset] -c local/wordpress.yaml
+
 ### Reset specific shot type remove files labeled "_old":
 
 wraith reset_shots --debug -l '_old' -c local/wordpress.yaml
 
 ### save "old" images
 
-wraith save_latest_images -l '_old' -c local/wordpress.yaml
+wraith save_latest_images [--reset] -l '_old' -c local/wordpress.yaml
 
 ### save "new" images
 
-wraith save_latest_images -l '_new -c local/wordpress.yaml
+wraith save_latest_images [--reset] -l '_new -c local/wordpress.yaml
 
 ### compare "old" & "new" images
 
@@ -42,15 +39,24 @@ wraith compare_latest_images --label1 '_old' --label2 '_new' -c local/wordpress.
 
 ### make thumbs for it all
 
-wraith latest_thumbnails -c local/wordpress.yaml
+wraith generate_thumbnails -c local/wordpress.yaml
 
 ### make galleries for this
 
-wraith latest_gallery -c local/wordpress.yaml
+wraith generate_gallery -c local/wordpress.yaml
 
 
 ## Example Conf
 
+Minimal configuration:
+```
+directory: "~/projects/wordpress-scans/furniturekingdom.com"
+domains:
+  wordpress: "http://www.furniturekingdom.com"
+before_capture: 'javascript/disable_javascript--phantom.js'
+```
+
+More complete configuration
 ```
 num_threads: 8
 browser: "phantomjs"
@@ -69,5 +75,4 @@ gallery:
   template: 'slideshow_new_template'
   thumb_width:  200
   thumb_height: 200
-mode: diffs_first
 ```

@@ -30,7 +30,7 @@ def exec_with_timeout(cmd, timeout, logoutput=true)
     end
 
   rescue Timeout::Error
-    logger.error "Killed child phantom js: #{cmd}"
+    $logger.error "Killed child phantom js: #{cmd}"
     Process.kill(-9, pid)
     Process.detach(pid)
   ensure
@@ -40,19 +40,18 @@ def exec_with_timeout(cmd, timeout, logoutput=true)
     rout.close
     rerr.close
   end
-  logger.info "#{stdout}" if logoutput
+  $logger.info "#{stdout}" if logoutput
   stdout
 end
 
 class Wraith::SaveImages
-  include Logging
   attr_reader :wraith, :history, :meta
 
   def initialize(wraith, history = false, yaml_passed = false, label=nil)
     @wraith = wraith
     @history = history
     @meta = SaveMetadata.new(@wraith, history, label=label)
-    logger.info "Save meta with label #{label}"
+    $logger.info "Save meta with label #{label}"
   end
 
   def check_paths
@@ -105,8 +104,7 @@ class Wraith::SaveImages
         command = construct_command(width, url, filename, selector, global_before_capture, path_before_capture)
         attempt_image_capture(command, filename)
       rescue => e
-        logger.error e
-        # create_invalid_image(filename, width)
+        $logger.error e
       end
     end
   end
@@ -122,15 +120,15 @@ class Wraith::SaveImages
   end
 
   def attempt_image_capture(capture_page_image, filename)
-    unless File.directory?(File.dirname(output_path))
-      FileUtils.mkdir_p(File.dirname(output_path))
+    unless File.directory?(File.dirname(filename))
+      FileUtils.mkdir_p(File.dirname(filename))
     end
     return true if image_was_created filename
     max_attempts = 10
     max_attempts.times do |i|
       run_command capture_page_image
       return true if image_was_created filename
-      logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts} \n  ----  #{capture_page_image}\n"
+      $logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts} \n  ----  #{capture_page_image}\n"
     end
     fail "Unable to capture image #{filename} after #{max_attempts} attempt(s)" unless image_was_created filename
   end
@@ -138,7 +136,7 @@ class Wraith::SaveImages
   def image_was_created(filename)
     # @TODO - need to check if the image was generated even if in resize mode
     if File.exist? filename
-      logger.info "--> Image saved #{filename}"
+      $logger.info "--> Image saved #{filename}"
       return true
     end
     return false
