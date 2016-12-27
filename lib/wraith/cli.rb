@@ -160,6 +160,7 @@ class Wraith::CLI < Thor
   method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
   def spider (label=nil)
     logger.info Wraith::Validate.new(@wraith).validate("latest")
+    @wraith.remove_labeled_shots('spider.txt') if options[:reset]
     spider = Wraith::Spidering.new(@wraith)
     spider.check_for_paths
   end
