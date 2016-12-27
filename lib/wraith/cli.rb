@@ -174,7 +174,7 @@ class Wraith::CLI < Thor
 
   desc "generate_gallery", "make a new gallery"
   def generate_gallery ()
-    $logger.info Wraith::Validate.new().validate("latest")
+    $logger.info Wraith::Validate.new(@wraith).validate("latest")
     within_acceptable_limits do
       generate_thumbnails()
       $logger.info "GENERATING GALLERY"
