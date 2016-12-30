@@ -16,6 +16,8 @@
 
 ## What is it?
 
+SEE Quickstart.md
+
 Wraith uses a headless browser to create screenshots of webpages on different environments (or at different moments in time) and then creates a diff of the two images; the affected areas are highlighted in blue.
 
 ![Photo of BBC News with a diff](http://bbc-news.github.io/wraith/img/wraith.png)

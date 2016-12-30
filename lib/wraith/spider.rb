@@ -76,38 +76,50 @@ class Wraith::Crawler < Wraith::Spider
            wav wmv ape aac ac3 wma aiff mpg mpeg \
            avi mov ogg mkv mka asx asf mp2 m1v rtf \
            m3u f4v pdf doc docx xls xlsx ppt pptx pps ppsx bin exe rss xml)
-
+  def add_links(page)
+    links = page.links.select { |link|
+      pth = link.path
+      rtn = false
+      m = pth.match(/\.(#{EXT.join('|')})$/)
+      if !m && !path_exists?(pth)
+        rtn = true
+        add_path(pth)
+      end
+      $logger.debug "SP: #{link.path}  InList: #{rtn}  Match:'#{ m }'"
+      rtn
+    }
+    links
+  end
+  def do_crawl ( url )
+    $logger.info "Starting Crawl #{url}"
+    Anemone.crawl(url, {
+                    :redirect_limit => 5,
+                    :discard_page_bodies=>true,
+                    :depth_limit=>wraith.spider_depth}) do |anemone|
+      # Add user specified skips
+      anemone.focus_crawl { |page|
+        add_links page
+      }
+      anemone.skip_links_like(/\.(#{EXT.join('|')})$/)
+      anemone.skip_links_like(wraith.spider_skips)
+      anemone.on_every_page { |page|
+        @visits += 1
+        if page.code == 301
+          nexturl = page.headers['location'][0] rescue nil
+          do_crawl(nexturl) if nexturl
+        end
+        add_path(page.url.path)
+        add_links page
+      }
+    end
+    $logger.info "Finished Crawl #{url}"
+  end
   def spider
     if not expired_crawl?( wraith.spider_file, wraith.spider_days )
       $logger.info "Using existing crawl #{wraith.spider_file} (use --reset)"
       @paths = eval(File.read(wraith.spider_file))
     else
-      $logger.info "creating new spider file"
-      Anemone.crawl(wraith.base_domain, {
-                      :discard_page_bodies=>true,
-                      :depth_limit=>wraith.spider_depth}) do |anemone|
-        anemone.skip_links_like(/\.(#{EXT.join('|')})$/)
-        # Add user specified skips
-        anemone.skip_links_like(wraith.spider_skips)
-        anemone.focus_crawl { |page|
-          links = page.links.select { |link|
-            pth = link.path
-            rtn = false
-            m = pth.match(/\.(#{EXT.join('|')})$/)
-            if !m && !path_exists?(pth)
-              rtn = true
-              add_path(pth)
-            end
-            # $logger.info "SP: #{link.path} #{rtn} #{ m }"
-            rtn
-          }
-          # $logger.info "Gonna search: #{links}"
-          links
-        }
-        anemone.on_every_page { |page|
-          @visits += 1
-        }
-      end
+      do_crawl(wraith.base_domain)
     end
   end
 
