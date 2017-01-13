@@ -6,13 +6,17 @@ class Wraith::Wraith
   attr_accessor :config
   attr_accessor :debug
 
-  def initialize(url=nil, directory=nil, config=nil, yaml_passed = false)
-    if config
-      @config = yaml_passed ? config : open_config_file(config)
+  def initialize(conf_dict=false, config_file=nil)
+    @config = conf_dict || {}
+    config_file = @config[:config_file] unless config_file
+    if config_file
+      $logger.debug("Trying top open conf: #{config_file}")
+      @config = @config.merge(open_config_file(config_file))
     end
-    @config ={} unless @config
     domains = nil
-    url = 'http://'+url unless url.start_with? 'http'
+    url = @config[:url]
+    directory = @config[:directory]
+    url  = 'http://'+url unless url.start_with? 'http'
     if url
       pthname = url.gsub(/https?:\/\//,"").gsub(/\//, '_')
       if directory
@@ -22,7 +26,7 @@ class Wraith::Wraith
       end
       domains = {pthname=> url}
     end
-    @config = {'directory'=>directory, "domains"=>domains}.merge(@config)
+    @config = {'directory'=>directory, "domains"=>domains, "ip"=>ip}.merge(@config)
     $logger.level = verbose ? Logger::DEBUG : $logger.level
   end
 
@@ -34,6 +38,7 @@ class Wraith::Wraith
   end
 
   def open_config_file(config_name)
+    return nil unless config_name
     possible_filenames = [
       config_name,
       "#{config_name}.yml",
@@ -50,6 +55,10 @@ class Wraith::Wraith
       end
     end
     fail ConfigFileDoesNotExistError, "unable to find config \"#{config_name}\""
+  end
+
+  def ip
+    @config[:ip]
   end
 
   def directory
@@ -93,8 +102,7 @@ class Wraith::Wraith
   end
 
   def before_capture
-    @config["before_capture"] ? convert_to_absolute(@config["before_capture"]) :
-      convert_to_absolute('javascript/disable_javascript--phantom.js')
+    @config["before_capture"] ? convert_to_absolute(@config["before_capture"]) : false
   end
 
   def widths
@@ -205,7 +213,7 @@ class Wraith::Wraith
   end
 
   def verbose
-    @config["verbose"] || @debug || false
+    @config["debug"] || @config["verbose"] || @debug || false
   end
 
   def num_threads

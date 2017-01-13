@@ -1,7 +1,9 @@
 # Wraith
 
-Wraith is for rool for making screen shots of websites and comparing
-the screenshots
+Wraith is for making screen shots of websites and comparing the screenshots
+
+Our primary use case is for moving sites to a new server and wanting
+to verify that everything still works
 
 ## Instuctions
 
@@ -12,9 +14,11 @@ wraith, and not the BBC version.
 
  * Create a folder to work in eg: `~/site-diffs`.
  * wraith save_latest_images -l '_old'  -u $URL -d $DIR
- * make whatever changes to the site (include put on a new server or
-   change hosts file / dns)
- * wraith save_latest_images -l '_new'  -u $URL -d $DIR
+ * make whatever changes to the site (include put on a new server)
+ * wraith save_latest_images -l '_new'  -u $URL -d $DIR -i $NEWIP
+  * NEWIP allows you to bypass DNS for the purposes of screen scraping
+    allowing you to copy a site to a new server, rescan, and if everything
+    looks good change dns
  * wraith compare_images --label1 '_old' --label2 '_new' -u $URL -d $DIR
  * This should put two galleries in place in the output folder
 
@@ -30,11 +34,17 @@ wraith reset_shots --debug -l '_old' -u $URL -d $DIR
 
 ### save "old" images
 
+This command will save images from the site $URL to $DIR/$URL
+
 wraith save_latest_images [--reset] -l '_old' -u $URL -d $DIR
 
 ### save "new" images
 
-wraith save_latest_images [--reset] -l '_new -u $URL -d $DIR
+This command will save images from the site $URL to $DIR/$URL.
+It will make all requests to $NEWIP so that you can check a site
+before moving its DNS
+
+wraith save_latest_images [--reset] -l '_new -u $URL -d $DIR -i $NEWIP
 
 ### compare "old" & "new" images
 

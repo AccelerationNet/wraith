@@ -16,12 +16,14 @@ class Wraith::CLI < Thor
 
 
   # This is the magical bit that gets mixed into your classes
-  class_option(:config, :type => :string, :aliases => "-c",
+  class_option(:config_file, :type => :string, :aliases => "-c",
                :banner =>" the path to your config file")
   class_option :verbose, :type => :boolean
   class_option :debug, :type => :boolean
   class_option(:url, :type =>:string, :aliases => "-u",
                :banner => "The url of the site you wish to render")
+  class_option(:ip, :type =>:string, :aliases => "-i",
+               :banner => "The ip address to use when grabbing the site (if different from dns - only phantomjs currently - only capture, not spidering)")
   class_option(:directory, :type =>:string, :aliases => "-d",
                :banner => "The base directory you wish to store your actions in")
 
@@ -43,9 +45,7 @@ class Wraith::CLI < Thor
 
   desc "validate [wraith]", "checks your configuration and validates that all required properties exist"
   def validate()
-    within_acceptable_limits do
-      $logger.info Wraith::Validate.new(@wraith).validate
-    end
+    #does by default
   end
 
   desc "setup", "creates config folder and default config"
@@ -60,7 +60,7 @@ class Wraith::CLI < Thor
   desc "reset_shots config", "removes all the files in the shots folder"
   method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
   def reset_shots(label=nil)
-    label = options[:label] or label
+    label = label or options[:label]
     $logger.info "Removing old shots #{label}"
     within_acceptable_limits do
       if label
@@ -97,11 +97,17 @@ class Wraith::CLI < Thor
   desc "compare_images", "compares images to generate diffs"
   method_option :label1, :default=> "_old", :aliases => "-l", :desc => "label the download eg:(_old)"
   method_option :label2, :default=> "_new", :aliases => "-m", :desc => "label the download eg:(_new)"
+  method_option :reset, :default=> false, :aliases => "-r", :desc => "remove extant diffs first"
   def compare_images(label1=nil, label2=nil)
     within_acceptable_limits do
       $logger.info "COMPARING IMAGES"
+      if options[:reset]
+        $logger.debug "Resetting comparisons"
+        reset_shots "_diff.txt"
+        reset_shots "_diff.png"
+      end
       compare = Wraith::CompareImages.new(@wraith, label1||options[:label1], label2||options[:label2])
-      compare.compare_images
+      compare.compare_images()
       generate_thumbnails()
       generate_gallery()
     end
@@ -120,10 +126,9 @@ class Wraith::CLI < Thor
   method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
   def capture(multi = false)
     within_acceptable_limits do
-      $logger.info Wraith::Validate.new(@wraith).validate("capture")
       reset_shots() if options[:reset]
       @wraith.create_folders
-      spider( options[:reset] )
+      spider( false )
       save_images()
       crop_images()
       compare_images()
@@ -137,12 +142,11 @@ class Wraith::CLI < Thor
   method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
   def history()
     within_acceptable_limits do
-      $logger.info Wraith::Validate.new(@wraith).validate("latest")
       @wraith.create_folders
       if options[:reset]
         reset_shots label || options[:label]
       end
-      spider( options[:reset] )
+      spider( false )
       save_images(true, label || options[:label])
       generate_thumbnails()
     end
@@ -155,9 +159,8 @@ class Wraith::CLI < Thor
   desc "spider", "Spider the site creating a spider.txt file"
   method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
   def spider (reset=nil)
-    $logger.info Wraith::Validate.new(@wraith).validate("latest")
     @wraith.create_folders
-    @wraith.remove_labeled_shots('spider.txt') if options[:reset]
+    @wraith.remove_labeled_shots('spider.txt') if reset || (reset !=false && options[:reset])
     $logger.info "Spidering #{@wraith.base_domain} into #{@wraith.spider_file}"
     spider = Wraith::Spidering.new(@wraith)
     spider.check_for_paths
@@ -167,19 +170,17 @@ class Wraith::CLI < Thor
   method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
   method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
   def save_latest_images (label=nil)
-    $logger.info Wraith::Validate.new(@wraith).validate("latest")
     @wraith.create_folders
     if options[:reset]
       reset_shots label || options[:label]
     end
-    spider( options[:reset] )
+    spider( false )
     save_images(true, label || options[:label])
     generate_thumbnails()
   end
 
   desc "generate_gallery", "make a new gallery"
   def generate_gallery ()
-    $logger.info Wraith::Validate.new(@wraith).validate("latest")
     within_acceptable_limits do
       generate_thumbnails()
       $logger.info "GENERATING GALLERY"
@@ -200,14 +201,10 @@ class Wraith::CLI < Thor
     $logger.level = (options[:debug] || options[:verbose]) ? Logger::DEBUG : Logger::INFO
     $logger.debug "options:#{options}"
 
-    @wraith = Wraith::Wraith.new(
-      url=options[:url], directory=options[:directory], config=options[:config])
-    if not @wraith.domains or @wraith.domains.count < 1
-      $logger.error("No url provided: %s" % [@wraith.config])
-      exit(1)
-    end
+    @wraith = Wraith::Wraith.new(config_dict=options)
+    # not sure this should maybe be "latest"
+    $logger.info Wraith::Validate.new(@wraith).validate
     @wraith.debug = (options[:debug] || options[:verbose])
     $logger.debug("Starting with config: %s" % [@wraith.config])
-
   end
 end

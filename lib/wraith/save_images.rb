@@ -115,7 +115,7 @@ class Wraith::SaveImages
     global_before_capture = convert_to_absolute global_before_capture
     path_before_capture   = convert_to_absolute path_before_capture
 
-    command_to_run = "#{meta.engine} #{wraith.phantomjs_options} '#{wraith.snap_file}' '#{url}' '#{width}' '#{file_name}' '#{selector}' '#{global_before_capture}' '#{path_before_capture}'"
+    command_to_run = "#{meta.engine} #{wraith.phantomjs_options} '#{wraith.snap_file}' '--url=#{url}' '--dimensions=#{width}' '--output=#{file_name}' '--selector=#{selector}' '--global_before_capture=#{global_before_capture}' '--page_before_capture=#{path_before_capture}' '--ip=#{@wraith.ip}'"
     command_to_run
   end
 
@@ -127,6 +127,7 @@ class Wraith::SaveImages
     max_attempts = 10
     max_attempts.times do |i|
       run_command capture_page_image
+      $logger.debug "Capturing: #{capture_page_image}"
       return true if image_was_created filename
       $logger.warn "Failed to capture image #{filename} on attempt number #{i + 1} of #{max_attempts} \n  ----  #{capture_page_image}\n"
     end
