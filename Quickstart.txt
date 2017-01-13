@@ -5,51 +5,55 @@ the screenshots
 
 ## Instuctions
 
-To use wraith (after goign through all the install or using the docker
-method) NOTE: You MUST be running the custom acceleration fork of
+To use wraith, install either via docker or ./make-acc
+
+NOTE: You MUST be running the custom acceleration (eg: 3.4a) fork of
 wraith, and not the BBC version.
 
  * Create a folder to work in eg: `~/site-diffs`.
- * Create a `~/site-diffs/{site}.yaml` with the basic config from beloow
- * wraith save_latest_images -l '_old' -c ~/site-diffs/{site}.yaml
+ * wraith save_latest_images -l '_old'  -u $URL -d $DIR
  * make whatever changes to the site (include put on a new server or
    change hosts file / dns)
- * wraith save_latest_images -l '_new' -c ~/site-diffs/{site}.yaml
- * wraith compare_images --label1 '_old' --label2 '_new' -c $CONFIG_FILE
+ * wraith save_latest_images -l '_new'  -u $URL -d $DIR
+ * wraith compare_images --label1 '_old' --label2 '_new' -u $URL -d $DIR
  * This should put two galleries in place in the output folder
 
 ## Usage:
 
 ### Create a spider.txt file to use in all following processes
 
-wraith spider --debug [--reset] -c local/wordpress.yaml
+wraith spider --debug [--reset]  -u $URL -d $DIR
 
 ### Reset specific shot type remove files labeled "_old":
 
-wraith reset_shots --debug -l '_old' -c local/wordpress.yaml
+wraith reset_shots --debug -l '_old' -u $URL -d $DIR
 
 ### save "old" images
 
-wraith save_latest_images [--reset] -l '_old' -c local/wordpress.yaml
+wraith save_latest_images [--reset] -l '_old' -u $URL -d $DIR
 
 ### save "new" images
 
-wraith save_latest_images [--reset] -l '_new -c local/wordpress.yaml
+wraith save_latest_images [--reset] -l '_new -u $URL -d $DIR
 
 ### compare "old" & "new" images
 
-wraith compare_images --label1 '_old' --label2 '_new' -c local/wordpress.yaml
+wraith compare_images --label1 '_old' --label2 '_new'  -u $URL -d $DIR
 
 ### make thumbs for it all
 
-wraith generate_thumbnails -c local/wordpress.yaml
+wraith generate_thumbnails -u $URL -d $DIR
 
 ### make galleries for this
 
-wraith generate_gallery -c local/wordpress.yaml
+wraith generate_gallery -u $URL -d $DIR
 
 
 ## Example Conf
+
+Configuration files can be used to provide more guidance to wraith.
+The wraith script accepts -c to pass the config file to each of the
+commands
 
 Minimal configuration:
 ```

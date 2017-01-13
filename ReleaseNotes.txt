@@ -1,4 +1,10 @@
-3.3 - revamp wraith to streamline re-running
+3.4a - CLI doesnt require config any longer
+  * default directory of ~/.wraith
+  * -u to specify url
+  * -d to specify output directory
+  * -c to specify config file
+
+3.3a - revamp wraith to streamline re-running
   * dont delete files by default
   * dont redo completed tasks
   * flags for resetting (deleting output) and log levels

@@ -6,11 +6,29 @@ class Wraith::Wraith
   attr_accessor :config
   attr_accessor :debug
 
-  def initialize(config, yaml_passed = false)
-    @config = yaml_passed ? config : open_config_file(config)
+  def initialize(url=nil, directory=nil, config=nil, yaml_passed = false)
+    if config
+      @config = yaml_passed ? config : open_config_file(config)
+    end
+    @config ={} unless @config
+    domains = nil
+    url = 'http://'+url unless url.start_with? 'http'
+    if url
+      pthname = url.gsub(/https?:\/\//,"").gsub(/\//, '_')
+      if directory
+        directory = "#{directory}/#{pthname}/"
+      else
+        directory = "~/.wraith/#{pthname}/"
+      end
+      domains = {pthname=> url}
+    end
+    @config = {'directory'=>directory, "domains"=>domains}.merge(@config)
     $logger.level = verbose ? Logger::DEBUG : $logger.level
   end
 
+  def config
+    @config
+  end
   def gem_root
     File.expand_path '../../..', __FILE__
   end
@@ -80,7 +98,7 @@ class Wraith::Wraith
   end
 
   def widths
-    @config["screen_widths"] || [1800]
+    @config["screen_widths"] || ['500x2000', 1800]
   end
 
   def resize

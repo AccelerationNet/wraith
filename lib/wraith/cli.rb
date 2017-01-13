@@ -16,9 +16,14 @@ class Wraith::CLI < Thor
 
 
   # This is the magical bit that gets mixed into your classes
-  class_option :config, :type => :string, :required=> true, :aliases => "-c"
+  class_option(:config, :type => :string, :aliases => "-c",
+               :banner =>" the path to your config file")
   class_option :verbose, :type => :boolean
   class_option :debug, :type => :boolean
+  class_option(:url, :type =>:string, :aliases => "-u",
+               :banner => "The url of the site you wish to render")
+  class_option(:directory, :type =>:string, :aliases => "-d",
+               :banner => "The base directory you wish to store your actions in")
 
   attr_accessor :config_name
 
@@ -90,8 +95,8 @@ class Wraith::CLI < Thor
   end
 
   desc "compare_images", "compares images to generate diffs"
-  method_option :label1, :default=> "", :aliases => "-l1", :desc => "label the download eg:(_old)"
-  method_option :label2, :default=> "", :aliases => "-l2", :desc => "label the download eg:(_new)"
+  method_option :label1, :default=> "_old", :aliases => "-l", :desc => "label the download eg:(_old)"
+  method_option :label2, :default=> "_new", :aliases => "-m", :desc => "label the download eg:(_new)"
   def compare_images(label1=nil, label2=nil)
     within_acceptable_limits do
       $logger.info "COMPARING IMAGES"
@@ -194,7 +199,15 @@ class Wraith::CLI < Thor
     super
     $logger.level = (options[:debug] || options[:verbose]) ? Logger::DEBUG : Logger::INFO
     $logger.debug "options:#{options}"
-    @wraith = Wraith::Wraith.new(options[:config])
+
+    @wraith = Wraith::Wraith.new(
+      url=options[:url], directory=options[:directory], config=options[:config])
+    if not @wraith.domains or @wraith.domains.count < 1
+      $logger.error("No url provided: %s" % [@wraith.config])
+      exit(1)
+    end
     @wraith.debug = (options[:debug] || options[:verbose])
+    $logger.debug("Starting with config: %s" % [@wraith.config])
+
   end
 end
