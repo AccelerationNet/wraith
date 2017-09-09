@@ -97,7 +97,7 @@ class Wraith::CLI < Thor
   desc "compare_images", "compares images to generate diffs"
   method_option :label1, :default=> "_old", :aliases => "-l", :desc => "label the download eg:(_old)"
   method_option :label2, :default=> "_new", :aliases => "-m", :desc => "label the download eg:(_new)"
-  method_option :reset, :default=> false, :aliases => "-r", :desc => "remove extant diffs first"
+  method_option :reset, :default=> false, :type => :boolean, :aliases => "-r", :desc => "remove extant diffs first"
   def compare_images(label1=nil, label2=nil)
     within_acceptable_limits do
       $logger.info "COMPARING IMAGES"
@@ -123,7 +123,7 @@ class Wraith::CLI < Thor
   end
 
   desc "capture", "Capture paths against two domains, compare them, generate gallery"
-  method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
+  method_option :reset, :default=>false,:type => :boolean, :aliases => "-r", :desc => "Remove existing files first"
   def capture(multi = false)
     within_acceptable_limits do
       reset_shots() if options[:reset]
@@ -139,7 +139,7 @@ class Wraith::CLI < Thor
 
   desc "history", "Setup a baseline set of shots same as save-latest-images "
   method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
-  method_option :reset, :default=>false, :aliases => "-r", :desc => "Remove existing files first"
+  method_option :reset, :default=>false, :type => :boolean, :aliases => "-r", :desc => "Remove existing files first"
   def history()
     within_acceptable_limits do
       @wraith.create_folders
@@ -157,18 +157,22 @@ class Wraith::CLI < Thor
 #  _________________________________________________________________
 
   desc "spider", "Spider the site creating a spider.txt file"
-  method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
+  method_option :reset, :default=> false, :type => :boolean, :aliases => "-r", :desc => "Remove existing files first"
   def spider (reset=nil)
+
     @wraith.create_folders
-    @wraith.remove_labeled_shots('spider.txt') if reset || (reset !=false && options[:reset])
-    $logger.info "Spidering #{@wraith.base_domain} into #{@wraith.spider_file}"
+    if reset || (reset !=false && options[:reset])
+      $logger.info "Removing old spidering"
+      @wraith.remove_labeled_shots('spider.txt')
+    end
+    $logger.info "Spidering #{@wraith.base_domain} into #{@wraith.spider_file} Proxy: #{@wraith.ip}"
     spider = Wraith::Spidering.new(@wraith)
     spider.check_for_paths
   end
 
   desc "save_latest_images", "get the latest images"
   method_option :label, :default=> "", :aliases => "-l", :desc => "label the download eg:(_old)"
-  method_option :reset, :default=> false, :aliases => "-r", :desc => "Remove existing files first"
+  method_option :reset, :default=> false, :type => :boolean, :aliases => "-r", :desc => "Remove existing files first"
   def save_latest_images (label=nil)
     @wraith.create_folders
     if options[:reset]

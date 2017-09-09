@@ -1,6 +1,6 @@
 require "wraith"
 require "wraith/helpers/logger"
-require "anemone"
+require "medusa"
 require "nokogiri"
 require "uri"
 require "time"
@@ -60,7 +60,7 @@ class Wraith::Spider
   def add_path(path)
     k = pkey(path)
     if path && !@paths[k]
-      $logger.debug "Spider adding (#{@paths.count} paths/#{@visits} visits, #{elapsed}s): #{path}"
+      # $logger.debug "Spider adding (#{@paths.count} paths/#{@visits} visits, #{elapsed}s): #{path}"
       @paths[k] = path.downcase
       write_file
     end
@@ -77,7 +77,8 @@ class Wraith::Crawler < Wraith::Spider
            avi mov ogg mkv mka asx asf mp2 m1v rtf \
            m3u f4v pdf doc docx xls xlsx ppt pptx pps ppsx bin exe rss xml)
   def add_links(page)
-    links = page.links.select { |link|
+    pl = page.links
+    links = pl.select { |link|
       pth = link.path
       rtn = false
       m = pth.match(/\.(#{EXT.join('|')})$/)
@@ -85,34 +86,52 @@ class Wraith::Crawler < Wraith::Spider
         rtn = true
         add_path(pth)
       end
-      $logger.debug "SP: #{link.path}  InList: #{rtn}  Match:'#{ m }'"
+      # $logger.debug "SP: #{link.path}  InList: #{rtn}  Match:'#{ m }'"
       rtn
     }
+    $logger.debug "Added_links #{page.url}, links:#{links.size}, paths:#{@paths.size}"
     links
   end
   def do_crawl ( url )
-    $logger.info "Starting Crawl #{url}"
-    Anemone.crawl(url, {
-                    :redirect_limit => 5,
-                    :discard_page_bodies=>true,
-                    :depth_limit=>wraith.spider_depth}) do |anemone|
+    debug = Proc.new do | *args |
+      $logger.debug "Req: #{args}"
+    end
+    $logger.info "Starting Crawl #{url} Ip:#{wraith.ip}"
+    uriO = URI.parse( url )
+    host  = uriO.host
+    opts = { :redirect_limit => 5,
+             :discard_page_bodies=>true,
+             :depth_limit=>wraith.spider_depth,
+             :threads=>1,
+             :http_request_headers => {"Host" => host},
+             :debug_request => debug
+           }
+    reqUrl = url
+    if wraith.ip
+      reqUrl = reqUrl.sub( host, wraith.ip )
+    end
+    Medusa.crawl(reqUrl, opts) do |medusa|
       # Add user specified skips
-      anemone.focus_crawl { |page|
-        add_links page
+      medusa.focus_crawl { |page|
+        links = add_links page
+        # $logger.debug("Focus #{page} #{links.size}")
+        links
       }
-      anemone.skip_links_like(/\.(#{EXT.join('|')})$/)
-      anemone.skip_links_like(wraith.spider_skips)
-      anemone.on_every_page { |page|
+      medusa.skip_links_like(/\.(#{EXT.join('|')})$/)
+      medusa.skip_links_like(wraith.spider_skips)
+      medusa.on_every_page { |page|
+        $logger.debug("Start Page #{page.url.path}: #{page.headers}")
         @visits += 1
         if page.code == 301
           nexturl = page.headers['location'][0] rescue nil
-          do_crawl(nexturl) if nexturl
+          self.do_crawl(nexturl) if nexturl
         end
         add_path(page.url.path)
-        add_links page
+        # add_links page # THIS IS DONE ABOVE
+        # $logger.debug("Finished page: #{page.url.path}")
       }
     end
-    $logger.info "Finished Crawl #{url}"
+    $logger.info "Finished Crawl #{url} (pages: #{visits})"
   end
   def spider
     if not expired_crawl?( wraith.spider_file, wraith.spider_days )

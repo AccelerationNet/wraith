@@ -4,6 +4,7 @@ require "pp"
 require "fileutils"
 require "wraith/wraith"
 require "wraith/helpers/logger"
+require "ostruct"
 
 class Wraith::GalleryGenerator
   include Logging

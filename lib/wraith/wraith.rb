@@ -58,7 +58,7 @@ class Wraith::Wraith
   end
 
   def ip
-    @config[:ip]
+    @config[:ip] or @config['ip']
   end
 
   def directory
