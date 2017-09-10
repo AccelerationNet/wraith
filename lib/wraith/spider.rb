@@ -89,7 +89,7 @@ class Wraith::Crawler < Wraith::Spider
       # $logger.debug "SP: #{link.path}  InList: #{rtn}  Match:'#{ m }'"
       rtn
     }
-    $logger.debug "Added_links #{page.url}, links:#{links.size}, paths:#{@paths.size}"
+    $logger.debug "Added_links #{page.url}, links:#{links}\n"
     links
   end
   def do_crawl ( url )
@@ -108,13 +108,19 @@ class Wraith::Crawler < Wraith::Spider
            }
     reqUrl = url
     if wraith.ip
+      $logger.info "#{reqUrl} #{host} #{wraith.ip}"
       reqUrl = reqUrl.sub( host, wraith.ip )
     end
     Medusa.crawl(reqUrl, opts) do |medusa|
       # Add user specified skips
       medusa.focus_crawl { |page|
         links = add_links page
-        # $logger.debug("Focus #{page} #{links.size}")
+        if wraith.ip
+          links = links.map{ |l|
+            l.host = wraith.ip
+            l
+          }
+        end
         links
       }
       medusa.skip_links_like(/\.(#{EXT.join('|')})$/)
@@ -123,7 +129,7 @@ class Wraith::Crawler < Wraith::Spider
         $logger.debug("Start Page #{page.url.path}: #{page.headers}")
         @visits += 1
         if page.code == 301
-          nexturl = page.headers['location'][0] rescue nil
+          nexturl = page.headers['location'] rescue nil
           self.do_crawl(nexturl) if nexturl
         end
         add_path(page.url.path)
