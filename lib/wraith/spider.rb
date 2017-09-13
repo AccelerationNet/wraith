@@ -4,6 +4,26 @@ require "medusa"
 require "nokogiri"
 require "uri"
 require "time"
+require 'openssl'
+
+$HOST = nil
+# Monkey patch SNI hostname to use whatever we are using
+# The final code seems to be looking at the instance variable
+# rather than the accessors, though it sets through the accessor
+# before reading the variable. This is unbelievably dumb, but
+# at least now it seems i can spider SSL sites by IP
+OpenSSL::SSL::SSLSocket.class_eval do
+  def hostname
+    rtn = $HOST or @hostname
+    # $logger.info "Returning SNI host: #{rtn}"
+    rtn
+  end
+  def hostname= ( it )
+    $logger.info "Setting SNI host: #{$HOST} instead of #{it}"
+    @hostname = $HOST
+  end
+end
+
 
 class Wraith::Spidering
   attr_reader :wraith
@@ -99,17 +119,22 @@ class Wraith::Crawler < Wraith::Spider
     $logger.info "Starting Crawl #{url} Ip:#{wraith.ip}"
     uriO = URI.parse( url )
     host  = uriO.host
+    $HOST = host
+    $logger.info "Setting global host #{$HOST}"
+
     opts = { :redirect_limit => 5,
              :discard_page_bodies=>true,
              :depth_limit=>wraith.spider_depth,
              :threads=>1,
-             :http_request_headers => {"Host" => host},
-             :debug_request => debug
+             :http_request_headers => {
+               "Host" => host,
+               :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE},
+             :debug_request => debug,
            }
     reqUrl = url
     if wraith.ip
-      $logger.info "#{reqUrl} #{host} #{wraith.ip}"
       reqUrl = reqUrl.sub( host, wraith.ip )
+      $logger.info "Setting URL to IP: #{reqUrl} #{host} #{wraith.ip}"
     end
     Medusa.crawl(reqUrl, opts) do |medusa|
       # Add user specified skips
