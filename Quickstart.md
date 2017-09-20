@@ -7,7 +7,7 @@ to verify that everything still works
 
 ## Instuctions
 
-To use wraith, install either via docker or ./make-acc
+To use wraith, install either via docker or ./install-new-gem.sh
 
 NOTE: You MUST be running the custom acceleration (eg: 3.4a) fork of
 wraith, and not the BBC version.

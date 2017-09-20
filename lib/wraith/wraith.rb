@@ -28,6 +28,31 @@ class Wraith::Wraith
     end
     @config = {'directory'=>directory, "domains"=>domains, "ip"=>ip}.merge(@config)
     $logger.level = verbose ? Logger::DEBUG : $logger.level
+
+    if dockerized?
+      $logger.debug "Running Dockerized"
+      if ip
+        urlO = URI(url)
+        host = urlO.host
+        $logger.info "Setting /etc/hosts for : #{ip} #{host}"
+        File.open("/etc/hosts", "w+") { |file|
+          file.write("\n#{ip} #{host}\n")
+        }
+        $logger.debug "Clearing Ip"
+        ip = nil # we have our hosts file to handle this
+      end
+    else
+      $logger.debug "Running as standalone ruby script (non-docker)"
+    end
+
+  end
+
+  def dockerized?
+    ENV['DOCKERIZED'] == "true"
+  end
+
+  def save_crawled?
+    false
   end
 
   def config
