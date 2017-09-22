@@ -6,39 +6,21 @@ require "uri"
 require "time"
 require 'openssl'
 
-$HOST = nil
-# Monkey patch SNI hostname to use whatever we are using
-# The final code seems to be looking at the instance variable
-# rather than the accessors, though it sets through the accessor
-# before reading the variable. This is unbelievably dumb, but
-# at least now it seems i can spider SSL sites by IP
-OpenSSL::SSL::SSLSocket.class_eval do
-  def hostname
-    rtn = $HOST or @hostname
-    # $logger.info "Returning SNI host: #{rtn}"
-    rtn
-  end
-  def hostname= ( it )
-    $logger.info "Setting SNI host: #{$HOST} instead of #{it}"
-    @hostname = $HOST
-  end
-end
-
-
 class Wraith::Spidering
   attr_reader :wraith
 
-  def initialize(wraith)
+  def initialize(wraith, label=nil)
     @wraith = wraith
+    @label = label
   end
 
   def check_for_paths
     unless wraith.sitemap.nil?
       $logger.info "no paths defined in config, loading paths from sitemap"
-      spider = Wraith::Sitemap.new(wraith)
+      spider = Wraith::Sitemap.new(wraith, @label)
     else
       $logger.info "no paths defined in config, crawling from site root"
-      spider = Wraith::Crawler.new(wraith)
+      spider = Wraith::Crawler.new(wraith, @label)
     end
     spider.determine_paths
   end
@@ -48,8 +30,9 @@ class Wraith::Spider
   attr_reader :wraith
   attr_accessor :visits
 
-  def initialize(wraith)
+  def initialize(wraith, label)
     @wraith = wraith
+    @label = label
     @paths = {}
     @visits=0
     @start=Time.new()
@@ -71,8 +54,10 @@ class Wraith::Spider
   end
 
   def pkey (path)
-    path == "/" ? "home" : path.gsub("/", "__").chomp("__").downcase
+    return "home" if path == "/"
+    path = path.gsub(/^\/|\/$/, '').gsub("/","__").downcase
   end
+
   def path_exists?(path)
     k = pkey(path)
     @paths[k]
@@ -99,10 +84,11 @@ class Wraith::Crawler < Wraith::Spider
   def add_links(page)
     pl = page.links
     links = pl.select { |link|
+
       pth = link.path
       rtn = false
       m = pth.match(/\.(#{EXT.join('|')})$/)
-      if !m && !path_exists?(pth)
+      if !m && !path_exists?(pth) && link.host == @wraith.host
         rtn = true
         add_path(pth)
       end
@@ -116,46 +102,37 @@ class Wraith::Crawler < Wraith::Spider
     debug = Proc.new do | *args |
       $logger.debug "Req: #{args}"
     end
-    $logger.info "Starting Crawl #{url} Ip:#{wraith.ip}"
-    uriO = URI.parse( url )
-    host  = uriO.host
-    $HOST = host
-    $logger.info "Setting global host #{$HOST}"
+
 
     opts = { :redirect_limit => 5,
              :discard_page_bodies=>true,
              :depth_limit=>wraith.spider_depth,
              :threads=>1,
              :http_request_headers => {
-               "Host" => host,
                :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE},
-             :debug_request => debug,
+             # :debug_request => debug,
            }
     reqUrl = url
-    if wraith.ip
-      reqUrl = reqUrl.sub( host, wraith.ip )
-      $logger.info "Setting URL to IP: #{reqUrl} #{host} #{wraith.ip}"
-    end
     Medusa.crawl(reqUrl, opts) do |medusa|
+      $logger.info "Starting Crawl #{url}"
       # Add user specified skips
-      medusa.focus_crawl { |page|
-        links = add_links page
-        if wraith.ip
-          links = links.map{ |l|
-            l.host = wraith.ip
-            l
-          }
-        end
-        links
-      }
+      medusa.focus_crawl { |page| add_links page }
       medusa.skip_links_like(/\.(#{EXT.join('|')})$/)
       medusa.skip_links_like(wraith.spider_skips)
       medusa.on_every_page { |page|
-        $logger.debug("Start Page #{page.url.path}: #{page.headers}")
+        $logger.debug("Start Page (#{@label}) #{page.url.path}: #{page.headers}")
         @visits += 1
         if page.code == 301
           nexturl = page.headers['location'] rescue nil
           self.do_crawl(nexturl) if nexturl
+        end
+        if @wraith.save_crawled?
+          pth = @wraith.spider_save_path(page.url.path)
+          FileUtils.mkdir_p(File.dirname("#{pth}"))
+          $logger.debug "Saving page to: #{pth}"
+          File.open(pth, "w+") { |file|
+            file.write(page.body)
+          }
         end
         add_path(page.url.path)
         # add_links page # THIS IS DONE ABOVE

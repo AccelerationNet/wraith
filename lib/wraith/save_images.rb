@@ -4,7 +4,6 @@ require "shellwords"
 require "wraith"
 require "wraith/helpers/capture_options"
 require "wraith/helpers/logger"
-require "wraith/helpers/save_metadata"
 require "wraith/helpers/utilities"
 
 #http://stackoverflow.com/questions/8292031/ruby-timeouts-and-system-commands
@@ -45,13 +44,12 @@ def exec_with_timeout(cmd, timeout, logoutput=true)
 end
 
 class Wraith::SaveImages
-  attr_reader :wraith, :history, :meta
+  attr_reader :wraith, :history
 
   def initialize(wraith, history = false, yaml_passed = false, label=nil)
     @wraith = wraith
     @history = history
-    @meta = SaveMetadata.new(@wraith, history, label=label)
-    $logger.info "Save meta with label #{label}"
+    $logger.info "Save with label #{label}"
   end
 
   def check_paths
@@ -80,8 +78,8 @@ class Wraith::SaveImages
   end
 
   def define_individual_job(label, settings, width)
-    base_file_name    = meta.file_names(width, label, meta.base_label)
-    compare_file_name = meta.file_names(width, label, meta.compare_label)
+    base_file_name    = wraith.file_names(width, label, wraith.base_label)
+    compare_file_name = wraith.file_names(width, label, wraith.compare_label)
     jobs = []
     jobs << [label, settings.path, prepare_widths_for_cli(width), settings.base_url,    base_file_name,    settings.selector, wraith.before_capture, settings.before_capture]
     jobs << [label, settings.path, prepare_widths_for_cli(width), settings.compare_url, compare_file_name, settings.selector, wraith.before_capture, settings.before_capture] unless settings.compare_url.nil?
@@ -115,7 +113,7 @@ class Wraith::SaveImages
     global_before_capture = convert_to_absolute global_before_capture
     path_before_capture   = convert_to_absolute path_before_capture
 
-    command_to_run = "#{meta.engine} #{wraith.phantomjs_options} '#{wraith.snap_file}' '--url=#{url}' '--dimensions=#{width}' '--output=#{file_name}' '--selector=#{selector}' '--global_before_capture=#{global_before_capture}' '--page_before_capture=#{path_before_capture}' '--ip=#{@wraith.ip}'"
+    command_to_run = "#{wraith.engine} #{wraith.phantomjs_options} '#{wraith.snap_file}' '--url=#{url}' '--dimensions=#{width}' '--output=#{file_name}' '--selector=#{selector}' '--global_before_capture=#{global_before_capture}' '--page_before_capture=#{path_before_capture}'"
     command_to_run
   end
 

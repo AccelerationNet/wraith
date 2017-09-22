@@ -5,6 +5,7 @@ require "wraith/helpers/utilities"
 class Wraith::Wraith
   attr_accessor :config
   attr_accessor :debug
+  attr_accessor :host
 
   def initialize(conf_dict=false, config_file=nil)
     @config = conf_dict || {}
@@ -13,12 +14,13 @@ class Wraith::Wraith
       $logger.debug("Trying top open conf: #{config_file}")
       @config = @config.merge(open_config_file(config_file))
     end
+    @file_tag = conf_dict["label"] or conf_dict[:label]
     domains = nil
-    url = @config[:url]
+    url = @config[:url].chomp('/')
     directory = @config[:directory]
     url  = 'http://'+url unless url.start_with? 'http'
     if url
-      pthname = url.gsub(/https?:\/\//,"").gsub(/\//, '_')
+      pthname = url.gsub(/https?:\/\//,"").gsub(/\/\//,'/').gsub(/\//, '_')
       if directory
         directory = "#{directory}/#{pthname}/"
       else
@@ -28,12 +30,13 @@ class Wraith::Wraith
     end
     @config = {'directory'=>directory, "domains"=>domains, "ip"=>ip}.merge(@config)
     $logger.level = verbose ? Logger::DEBUG : $logger.level
+    urlO = URI(url)
+    self.host = urlO.host
 
     if dockerized?
       $logger.debug "Running Dockerized"
       if ip
-        urlO = URI(url)
-        host = urlO.host
+
         $logger.info "Setting /etc/hosts for : #{ip} #{host}"
         File.open("/etc/hosts", "w+") { |file|
           file.write("\n#{ip} #{host}\n")
@@ -43,6 +46,10 @@ class Wraith::Wraith
       end
     else
       $logger.debug "Running as standalone ruby script (non-docker)"
+      if ip
+        $logger.warning()
+        raise Exception.new("Run the dockerized variant of the script to access by-IP crawls")
+      end
     end
 
   end
@@ -85,6 +92,10 @@ class Wraith::Wraith
   def ip
     @config[:ip] or @config['ip']
   end
+  def ip= (val)
+    @config[:ip] = @config['ip'] = val
+  end
+
 
   def directory
     # Legacy support for those using array configs
@@ -93,8 +104,8 @@ class Wraith::Wraith
     d = File.expand_path(d)
     FileUtils.mkdir_p(d) unless File.exist? d
     d = File.realpath(d)
-    d = "~/.wraith/#{base_domain}/" unless d
-    d
+    d = "~/.wraith/#{base_domain}" unless d
+    d.chomp('/')
   end
 
   def history_dir
@@ -159,8 +170,23 @@ class Wraith::Wraith
     domains.keys[1]
   end
 
+  def save_label
+    return @file_tag if @file_tag
+    return "_latest" if @history
+    return ""
+  end
+
   def spider_file
     @config["spider_file"] ? @config["spider_file"] : "#{directory}/spider.txt"
+  end
+
+  def spider_save_path(pth)
+    pth = pth.gsub(/^\//, '').chomp('/')
+    if !( /.html?/ =~ pth )
+      pth = "#{pth}/index.html"
+    end
+    pth = "#{directory}/#{save_label}/#{pth}"
+    pth
   end
 
 
@@ -173,6 +199,25 @@ class Wraith::Wraith
     s = s[0] if s.kind_of?(Array)
     s = 180 if not s
     return s
+  end
+
+  def meta_label
+    return @file_tag if @file_tag
+    return "_latest" if @history
+    return ""
+  end
+
+  def file_names(width, label, domain_label)
+    width = "MULTI" if width.is_a? Array
+    "#{directory}/#{meta_label}/#{label}/#{engine}_#{width}_#{domain_label}.png"
+  end
+
+  def base_label
+    "#{base_domain_label}"
+  end
+
+  def compare_label
+    "#{comp_domain_label}"
   end
 
   def sitemap
@@ -251,18 +296,43 @@ class Wraith::Wraith
   end
 
   def remove_labeled_shots(label)
-    Dir["#{directory}/**/*#{label}.png"].each do |filepath|
+    Dir["#{directory}/#{label}/**/*.png"].each do |filepath|
       $logger.debug "Removing labeled file #{filepath}"
       File.delete(filepath)
     end
     Dir["#{directory}/**/*#{label}"].each do |filepath|
       $logger.debug "Removing labeled file #{filepath}"
-      File.delete(filepath)
+      File.delete(filepath) if File.file?(filepath)
     end
   end
   def create_folders
     unless File.directory?(directory)
       FileUtils.mkdir_p(directory)
     end
+  end
+
+  def is_thumb? (pth)
+    pth =~ /\.tn\.png$/
+  end
+
+  def thumb_for(pth)
+    thpth = pth
+    if not is_thumb? pth
+      thpth = pth.gsub(/\.png$/, ".tn.png")
+    end
+    if File.exists?( pth ) and not File.exists?( thpth )
+      make_thumbnail_image(pth, thpth)
+    end
+    thpth
+  end
+
+  def make_thumbnail_image(png_path, output_path)
+    return true if File.exists? output_path
+    unless File.directory?(File.dirname(output_path))
+      FileUtils.mkdir_p(File.dirname(output_path))
+    end
+
+    `convert #{png_path.shellescape} -thumbnail 200 -crop #{self.thumb_width.to_s}x#{self.thumb_height.to_s}+0+0 #{output_path.shellescape}`
+    $logger.info "Created thumbnail #{output_path}"
   end
 end

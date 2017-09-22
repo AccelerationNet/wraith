@@ -103,8 +103,7 @@ class Wraith::CLI < Thor
       $logger.info "COMPARING IMAGES"
       if options[:reset]
         $logger.debug "Resetting comparisons"
-        reset_shots "_diff.txt"
-        reset_shots "_diff.png"
+        reset_shots "diff"
       end
       compare = Wraith::CompareImages.new(@wraith, label1||options[:label1], label2||options[:label2])
       compare.compare_images()
@@ -158,15 +157,16 @@ class Wraith::CLI < Thor
 
   desc "spider", "Spider the site creating a spider.txt file"
   method_option :reset, :default=> false, :type => :boolean, :aliases => "-r", :desc => "Remove existing files first"
-  def spider (reset=nil)
-
+  method_option :label, :default=> nil, :aliases => "-l", :desc => "the download the site to a label eg:(_old)"
+  def spider (reset=nil, label=nil)
+    label = label || options[:label] || options["label"]
     @wraith.create_folders
     if reset || (reset !=false && options[:reset])
       $logger.info "Removing old spidering"
       @wraith.remove_labeled_shots('spider.txt')
     end
-    $logger.info "Spidering #{@wraith.base_domain} into #{@wraith.spider_file} Proxy: #{@wraith.ip}"
-    spider = Wraith::Spidering.new(@wraith)
+    $logger.info "Spidering #{@wraith.base_domain} into #{@wraith.spider_file} Proxy: #{@wraith.ip} Saving to:#{wraith.spider_save_path('/')} \"#{label}\""
+    spider = Wraith::Spidering.new(@wraith, label)
     spider.check_for_paths
   end
 

@@ -20,21 +20,21 @@ class Wraith::GalleryGenerator
   def generate_gallery_data (only_diff=true)
     @dirs = []
     idx = -1
-    Dir.glob("#{@location}/*/*_diff.txt").each do |fn|
+    Dir.glob("#{@location}/diff/**/*.txt").each do |fn|
       idx += 1
       info = eval(File.read(fn))
       if not info[:diff]
-        info[:diff] = info[:from].gsub(/([a-zA-Z0-9]+).png$/, "_diff.png")
+        info[:diff] = fn.gsub(/.txt$/, ".png")
       end
       pnf = Pathname.new(info[:from])
       match = MATCH_FILENAME.match(pnf.basename.to_s)
       info[:size] = match[1].to_s if not info[:size]
       info[:from] = info[:from].gsub("#{wraith.directory}/", "")
-      info[:fromTH] = "thumbnails/#{info[:from]}"
+      info[:fromTH] = @wraith.thumb_for(info[:from])
       info[:to] = info[:to].gsub("#{wraith.directory}/", "")
-      info[:toTH] = "thumbnails/#{info[:to]}"
+      info[:toTH] = @wraith.thumb_for(info[:to])
       info[:diff] = info[:diff].gsub("#{wraith.directory}/", "")
-      info[:diffTH] = "thumbnails/#{info[:diff]}"
+      info[:diffTH] = @wraith.thumb_for(info[:diff])
       info[:dir] = pnf.dirname.to_s
       info[:idx] = idx
       @dirs << info

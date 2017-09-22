@@ -23,11 +23,13 @@ class Wraith::CompareImages
   end
 
   def compare_images_by_label
-    files = Dir.glob("#{wraith.directory}/*/*#{@label1}.png").sort
+    files = Dir.glob("#{wraith.directory}/#{@label1}/**/*.png").sort
     Parallel.each(files, :in_processes => Parallel.processor_count) do |f1|
-      f2 = f1.gsub("#{@label1}.png", "#{@label2}.png")
+      next if f1 =~ /\.tn\.png$/
+      f2 = f1.gsub("#{wraith.directory}/#{@label1}/", "#{wraith.directory}/#{@label2}/")
+      diff = f1.gsub("#{wraith.directory}/#{@label1}/", "#{wraith.directory}/diff/")
       if File.exists? f2
-        compare_task(f1, f2)
+        compare_task(f1, f2, diff)
       else
         $logger.error("Missing file #{f2} writing dummy diff")
       end
@@ -48,11 +50,13 @@ class Wraith::CompareImages
     return rounded
   end
 
-  def compare_task(base, compare)
+  def compare_task(base, compare, diff_dir)
     $logger.debug "Comparing #{base} and #{compare}"
-    diff = base.gsub(/([a-zA-Z0-9]+).png$/, "_diff.png")
-    info = base.gsub(/([a-zA-Z0-9]+).png$/, "_diff.txt")
-
+    diff = diff_dir.gsub(/\.png$/, ".diff.png")
+    info = diff_dir.gsub(/\.png$/, ".diff.txt")
+    unless File.directory?(File.dirname(diff))
+      FileUtils.mkdir_p(File.dirname(diff))
+    end
     if File.exists? diff
       $logger.info "Diff exists #{diff}"
       return
@@ -63,6 +67,7 @@ class Wraith::CompareImages
       img = ImageSize.path(diff)
       img_size = img.size.inject(:*)
       amount = percentage(img_size, px_value, info)
+
       File.open(info, "w") { |file|
         file.write({:from=>base,
                     :to=>compare,
